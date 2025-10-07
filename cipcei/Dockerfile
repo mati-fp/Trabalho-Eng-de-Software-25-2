@@ -22,5 +22,7 @@ RUN pnpm run build
 # Expose the application port
 EXPOSE 3000
 
+ENTRYPOINT ["tail", "-f", "/dev/null"]
+
 # Command to run the application
-CMD ["pnpm", "run", "start"]
+#CMD ["pnpm", "run", "start:dev"]

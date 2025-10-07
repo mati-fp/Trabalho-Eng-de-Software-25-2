@@ -3,6 +3,11 @@
 ## Versão do node é a 20 LTS-Mais-Recente (Iron)
 
 ```bash
+#Lembrar de dar cd cipcei
+$ cd cipcei
+```
+
+```bash
 #Instalar o pnpm (gerenciador de pacotes que usaremos)
 $ npm install -g pnpm
 ```
@@ -13,13 +18,18 @@ $ pnpm install
 ```
 
 ```bash
-#Comandos para executar para criar a imagem docker
-$ docker build -t cipcei .
+#Comandos para executar para criar a imagem docker e iniciar container
+$ docker-compose up --build -d
 ```
 
 ```bash
-#Inciar o contaienr com o Docker
-$ docker run -p 3000:3000 cipcei
+#Comando para entrar no container
+$ docker-compose exec -it app bash
+```
+
+```bash
+#Comando para executar aplicação
+$ pnpm run start:dev
 ```
 
 

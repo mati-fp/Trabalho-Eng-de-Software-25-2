@@ -1,0 +1,19 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cipcei-dev
+    ports:
+      - "3000:3000"
+    volumes:
+      # Monta o código fonte para hot reload
+      - .:/usr/src/app
+      # Evita sobrescrever node_modules do container com o local
+      - /usr/src/app/node_modules
+    environment:
+      - NODE_ENV=development
+    # Reinicia automaticamente se crashar
+    command: pnpm run start:dev
+    restart: unless-stopped
+    tty: true

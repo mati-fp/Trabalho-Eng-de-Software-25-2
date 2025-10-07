@@ -14,6 +14,6 @@ services:
     environment:
       - NODE_ENV=development
     # Reinicia automaticamente se crashar
-    command: pnpm run start:dev
+    #command: pnpm run start:dev
     restart: unless-stopped
     tty: true

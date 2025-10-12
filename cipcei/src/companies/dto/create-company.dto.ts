@@ -1,14 +1,14 @@
-import { IsEmail, IsNotEmpty, IsString, IsUUID } from "class-validator";
+import { Type } from "class-transformer";
+import { IsEmail, IsNotEmpty, IsString, IsUUID, ValidateNested } from "class-validator";
+import { CreateUserDto } from "src/users/dto/create-user.dto";
 
 export class CreateCompanyDto {
-    @IsString()
-    @IsNotEmpty()
-    name: string;
+  @IsNotEmpty()
+  @ValidateNested() // Diz ao NestJS para validar o objeto aninhado
+  @Type(() => CreateUserDto) // Diz ao class-transformer como criar a instância do DTO aninhado
+  user: CreateUserDto;
 
-    @IsEmail()
-    @IsNotEmpty()
-    email: string;
-
-    @IsUUID() 
-    roomId: string; 
+  @IsUUID()
+  @IsNotEmpty()
+  roomId: string;
 }

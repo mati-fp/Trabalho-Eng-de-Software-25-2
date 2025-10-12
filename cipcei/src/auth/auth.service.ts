@@ -53,9 +53,9 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
+        name: user.name,
         role: user.role,
-        companyId: user.company?.id,
-        companyName: user.company?.name,
+        companyId: user.company?.id
       },
     };
   }
@@ -114,9 +114,10 @@ export class AuthService {
 
   /**
    * Hash de senha usando bcrypt (10 rounds conforme documentação)
+   * Removido pois o hash já é feito na entidade User com @BeforeInsert
    */
-  async hashPassword(password: string): Promise<string> {
-    const saltRounds = 10;
-    return bcrypt.hash(password, saltRounds);
-  }
+  // async hashPassword(password: string): Promise<string> {
+  //   const saltRounds = 10;
+  //   return bcrypt.hash(password, saltRounds);
+  // }
 }

@@ -1,26 +1,22 @@
-# Use the official Node.js image as the base image
-FROM node:20
+FROM node:20-alpine
 
-# Install pnpm globally
-RUN corepack enable pnpm && corepack install -g pnpm@latest
+# Definir diretório de trabalho
+WORKDIR /app
 
-RUN useradd -ms /bin/sh -u 1001 app
+# Instalar dependências do sistema necessárias
+RUN apk add --no-cache python3 make g++
 
-USER app
+# Copiar arquivos de dependências
+COPY package*.json ./
 
-# Set the working directory inside the container
-WORKDIR /usr/src/app
+# Instalar dependências
+RUN npm ci
 
-# Copy package.json and pnpm-lock.yaml to the working directory
-COPY package.json pnpm-lock.yaml* ./
+# Copiar código fonte
+COPY . .
 
-# Install the application dependencies
-RUN pnpm install 
-
-# Copy the rest of the application files
-COPY --chown=app:app . .
-
-# Expose the application port
+# Expor porta da aplicação
 EXPOSE 3000
 
-ENTRYPOINT ["tail", "-f", "/dev/null"]
+# Comando para iniciar em modo desenvolvimento com hot-reload
+CMD ["npm", "run", "start:dev"]

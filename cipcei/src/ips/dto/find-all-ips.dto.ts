@@ -1,5 +1,6 @@
-import { IsEnum, IsOptional, IsUUID } from 'class-validator';
+import { IsEnum, IsInt, IsNumber, IsOptional, IsPositive, IsUUID } from 'class-validator';
 import { IpStatus } from '../entities/ip.entity';
+import { Type } from 'class-transformer';
 
 export class FindAllIpsDto {
   @IsOptional()
@@ -9,4 +10,10 @@ export class FindAllIpsDto {
   @IsOptional()
   @IsUUID()
   companyId?: string;
+
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  @Type(() => Number) // Garante que o parâmetro da URL (string) seja convertido para número
+  roomNumber?: number;
 }

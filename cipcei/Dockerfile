@@ -2,7 +2,11 @@
 FROM node:20
 
 # Install pnpm globally
-RUN npm install -g pnpm
+RUN corepack enable pnpm && corepack install -g pnpm@latest
+
+RUN useradd -ms /bin/sh -u 1001 app
+
+USER app
 
 # Set the working directory inside the container
 WORKDIR /usr/src/app
@@ -11,18 +15,12 @@ WORKDIR /usr/src/app
 COPY package.json pnpm-lock.yaml* ./
 
 # Install the application dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install 
 
 # Copy the rest of the application files
-COPY . .
-
-# Build the NestJS application
-RUN pnpm run build
+COPY --chown=app:app . .
 
 # Expose the application port
 EXPOSE 3000
 
 ENTRYPOINT ["tail", "-f", "/dev/null"]
-
-# Command to run the application
-#CMD ["pnpm", "run", "start:dev"]

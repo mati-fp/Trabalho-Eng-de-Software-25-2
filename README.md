@@ -11,7 +11,7 @@ $ cd cipcei
 ```
 
 ```bash
-#Instalar o pnpm (gerenciador de pacotes que usaremos)
+#Instalar o pnpm (gerenciador de pacotes que usaremos) (opcional)
 $ npm install -g pnpm
 ```
 

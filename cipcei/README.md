@@ -43,16 +43,16 @@ docker-compose down
 docker-compose up --build
 
 # Ver logs
-docker-compose logs -f cipcei-nestjs-app
+docker-compose logs -f app
 
 # Acessar o container da aplicação
-docker-compose exec cipcei-nestjs-app sh
+docker-compose exec app sh
 
 # Instalar nova dependência
-docker-compose exec cipcei-nestjs-app npm install [pacote]
+docker-compose exec app npm install [pacote]
 
 # Rodar migrations (ajuste conforme seu setup)
-docker-compose exec cipcei-nestjs-app npm run migration:run
+docker-compose exec app npm run migration:run
 
 # Limpar volumes e recomeçar do zero
 docker-compose down -v
@@ -79,7 +79,7 @@ O hot-reload está configurado automaticamente! Quando você salvar qualquer arq
 **Problema**: Container não inicia
 ```bash
 # Verifique os logs
-docker-compose logs cipcei-nestjs-app
+docker-compose logs app
 ```
 
 **Problema**: Mudanças não refletem

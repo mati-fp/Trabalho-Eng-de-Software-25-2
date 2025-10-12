@@ -1,36 +1,115 @@
+# Trabalho-Eng-de-Software-25-2
+## Sistema de gerenciamento de IP's para o CEI (Centro de Empreendedorismo e Inovação do INF-UFRGS)
+
 # Project setup
 
-## Versão do node é a 20 LTS-Mais-Recente (Iron)
+## Versão do node é a 20 LTS-Mais-Recente (Iron) Com NPM
+
+# 🐳 Configuração Docker para Desenvolvimento
+
+## Pré-requisitos
+- Docker instalado (versão 20.10+)
+- Docker Compose instalado (versão 2.0+)
+
+## Como usar
+
+### 1. Primeira vez rodando o projeto
 
 ```bash
-#Lembrar de dar cd cipcei
-$ cd cipcei
+# Clone o repositório
+git clone [seu-repositorio]
+cd [seu-projeto]/[cipcei]
+
+# Copie o arquivo de exemplo de variáveis de ambiente 
+cp .env.example .env # PARA USARMOS NO FUTURO
+
+# Construa e inicie os containers
+docker-compose up --build
 ```
 
-```bash
-#Instalar o pnpm (gerenciador de pacotes que usaremos) (opcional)
-$ npm install -g pnpm
-```
+### 2. Comandos úteis
 
 ```bash
-#Instale as dependências localmente primeiro (opcional)
-$ pnpm install
+# Iniciar os containers
+docker-compose up
+
+# Iniciar em background
+docker-compose up -d
+
+# Parar os containers
+docker-compose down
+
+# Reconstruir após mudanças no Dockerfile
+docker-compose up --build
+
+# Ver logs
+docker-compose logs -f app
+
+# Acessar o container da aplicação
+docker-compose exec app sh
+
+# Instalar nova dependência
+docker-compose exec app npm install [pacote]
+
+# Rodar migrations (ajuste conforme seu setup)
+docker-compose exec app npm run migration:run
+
+# Limpar volumes e recomeçar do zero
+docker-compose down -v
 ```
 
+### 3. Estrutura
+
+- **PostgreSQL**: Roda na porta `5432`
+- **NestJS**: Roda na porta `3000`
+- **Debug**: Disponível na porta `9229` (para VSCode)
+
+### 4. Hot Reload
+
+O hot-reload está configurado automaticamente! Quando você salvar qualquer arquivo `.ts` ou `.js`, o NestJS irá recarregar automaticamente dentro do container.
+
+### 5. Acessando a aplicação
+
+- API: http://localhost:3000
+- PostgreSQL: localhost:5432
+
+
+### 6. Troubleshooting
+
+**Problema**: Container não inicia
 ```bash
-#Comandos para executar para criar a imagem docker e iniciar container
-$ docker-compose up --build -d
+# Verifique os logs
+docker-compose logs app
 ```
 
+**Problema**: Mudanças não refletem
 ```bash
-#Comando para entrar no container
-$ docker-compose exec -it app bash
+# Reconstrua o container
+docker-compose down
+docker-compose up --build
 ```
 
+**Problema**: Erro de permissão
 ```bash
-#Comando para executar aplicação
-$ pnpm run start:dev
+# No Linux, pode ser necessário ajustar permissões
+sudo chown -R $USER:$USER .
 ```
+
+**Problema**: Porta já em uso
+```bash
+# Verifique se as portas 3000 ou 5432 já estão em uso
+lsof -i :3000
+lsof -i :5432
+```
+
+### 7. Para toda a equipe
+
+Cada desenvolvedor precisa apenas:
+1. Ter Docker instalado
+2. Clonar o repositório
+3. Rodar `docker-compose up --build`
+
+Isso garante que todos tenham exatamente o mesmo ambiente! 🎉
 
 
 <p align="center">
@@ -63,33 +142,33 @@ $ pnpm run start:dev
 ## Project setup
 
 ```bash
-$ pnpm install
+$ npm install
 ```
 
 ## Compile and run the project
 
 ```bash
 # development
-$ pnpm run start
+$ npm run start
 
 # watch mode
-$ pnpm run start:dev
+$ npm run start:dev
 
 # production mode
-$ pnpm run start:prod
+$ npm run start:prod
 ```
 
 ## Run tests
 
 ```bash
 # unit tests
-$ pnpm run test
+$ npm run test
 
 # e2e tests
-$ pnpm run test:e2e
+$ npm run test:e2e
 
 # test coverage
-$ pnpm run test:cov
+$ npm run test:cov
 ```
 
 ## Deployment
@@ -99,7 +178,7 @@ When you're ready to deploy your NestJS application to production, there are som
 If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
 
 ```bash
-$ pnpm install -g @nestjs/mau
+$ npm install -g @nestjs/mau
 $ mau deploy
 ```
 

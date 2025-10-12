@@ -20,27 +20,29 @@ export class IpsService {
   ) {}
 
   async findAll(findAllIpsDto: FindAllIpsDto): Promise<Ip[]> {
-    const { status, companyId } = findAllIpsDto;
+    // --- ALTERAÇÃO AQUI ---
+    const { status, companyId, roomNumber } = findAllIpsDto;
 
-    // Inicia a construção da query para a entidade 'Ip'
     const queryBuilder = this.ipRepository.createQueryBuilder('ip');
 
-    // Inclui as entidades relacionadas para podermos filtrar e exibir
     queryBuilder
-      .leftJoinAndSelect('ip.room', 'room')
-      .leftJoinAndSelect('room.company', 'company');
+     .leftJoinAndSelect('ip.room', 'room')
+     .leftJoinAndSelect('room.company', 'company');
 
-    // Adiciona o filtro de status, se ele for fornecido
     if (status) {
       queryBuilder.andWhere('ip.status = :status', { status });
     }
 
-    // Adiciona o filtro de companyId, se ele for fornecido
     if (companyId) {
       queryBuilder.andWhere('company.id = :companyId', { companyId });
     }
 
-    // Executa a query e retorna os resultados
+    // --- ALTERAÇÃO AQUI ---
+    // Adiciona a condição para o novo filtro de número da sala
+    if (roomNumber) {
+      queryBuilder.andWhere('room.number = :roomNumber', { roomNumber });
+    }
+
     return queryBuilder.getMany();
   }
 
@@ -95,6 +97,21 @@ export class IpsService {
     ip.status = IpStatus.IN_USE;
     ip.macAddress = macAddress;
 
+    return this.ipRepository.save(ip);
+  }
+
+  async unassign(ipId: string): Promise<Ip> {
+    const ip = await this.ipRepository.findOneBy({ id: ipId });
+    if (!ip) {
+      throw new NotFoundException(`IP with ID "${ipId}" not found`);
+    }
+    
+    if (ip.status === IpStatus.AVAILABLE) {
+      throw new ConflictException(`IP address ${ip.address} is already available`);
+    }
+    ip.status = IpStatus.AVAILABLE;
+    ip.macAddress = '';
+    
     return this.ipRepository.save(ip);
   }
 }

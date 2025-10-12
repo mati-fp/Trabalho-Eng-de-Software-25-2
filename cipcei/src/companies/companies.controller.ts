@@ -2,8 +2,12 @@ import { Body, Controller, Delete, Get, HttpCode, NotFoundException, Param, Patc
 import { CompaniesService } from './companies.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { UserRole } from 'src/users/entities/user.entity';
+import { Public } from 'src/auth/decorators/public.decorator';
 
 @Controller('companies')
+@Public()
 export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) { }
 

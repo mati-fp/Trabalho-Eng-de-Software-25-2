@@ -11,6 +11,49 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cipcei-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d cipcei_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Serviço da aplicação NestJS
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cipcei-nestjs-app
+    restart: always
+    ports:
+      - "3000:3000"
+      - "9229:9229" # Porta para debug (opcional)
+    volumes:
+      # Volume bind para hot-reload - mapeia código local para o container
+      - .:/app
+      - /app/node_modules # Evita sobrescrever node_modules do container
+    environment:
+      # Configurações de banco de dados
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: user
+      DATABASE_PASSWORD: password
+      DATABASE_NAME: cipcei_db
+      # Ambiente
+      NODE_ENV: development
+      PORT: 3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - cipcei-network
+    stdin_open: true
+    tty: true
 
 volumes:
   postgres_data:
+
+networks:
+  cipcei-network:
+    driver: bridge

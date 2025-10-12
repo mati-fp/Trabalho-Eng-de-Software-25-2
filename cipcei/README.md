@@ -18,10 +18,10 @@
 ```bash
 # Clone o repositório
 git clone [seu-repositorio]
-cd [seu-projeto]
+cd [seu-projeto]/[cipcei]
 
-# Copie o arquivo de exemplo de variáveis de ambiente
-cp .env.example .env
+# Copie o arquivo de exemplo de variáveis de ambiente 
+cp .env.example .env # PARA USARMOS NO FUTURO
 
 # Construa e inicie os containers
 docker-compose up --build

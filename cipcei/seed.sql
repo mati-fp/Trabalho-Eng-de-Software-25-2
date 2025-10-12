@@ -1,7 +1,6 @@
 -- Rodar da seguinte maneira após subir os containers pela primeira vez para popular com algumas salas e ips.
 -- PGPASSWORD=password docker exec -i cipcei-postgres-db psql -U user -d cipcei_db < seed.sql
 
-
 -- Inicia um bloco de transação para garantir que tudo seja executado de uma vez.
 DO $$
 DECLARE

@@ -7,6 +7,7 @@ import { CreateIpDto } from "./dto/create-ip.dto";
 import { AssignIpDto } from "./dto/assign-ip.dto";
 import { Company } from "src/companies/entities/company.entity";
 import { FindAllIpsDto } from "./dto/find-all-ips.dto";
+import { isUUID } from 'class-validator';
 
 @Injectable()
 export class IpsService {
@@ -113,5 +114,24 @@ export class IpsService {
     ip.macAddress = '';
     
     return this.ipRepository.save(ip);
+  }
+
+  async requestIp(companyId: string, roomId: string) {
+    if (!isUUID(roomId)) {
+      throw new BadRequestException('roomId deve ser um UUID válido');
+    }
+    // Busca um IP disponível na sala
+    const ip = await this.ipRepository.findOne({
+      where: { room: { id: roomId }, status: IpStatus.AVAILABLE },
+      relations: ['room'],
+    });
+    if (!ip) {
+      throw new NotFoundException('Nenhum IP disponível nesta sala');
+    }
+
+    // Atualiza o status para IN_USE
+    ip.status = IpStatus.IN_USE;
+    await this.ipRepository.save(ip);
+    return ip;
   }
 }

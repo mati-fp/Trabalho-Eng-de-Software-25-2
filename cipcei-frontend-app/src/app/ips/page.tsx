@@ -136,14 +136,14 @@ export default function IpsPage() {
   const getStatusBadge = (status: string) => {
     if (status === "available") {
       return (
-        <Badge variant="default" className="bg-primary text-primary-foreground">
+        <Badge variant="default" className="bg-secondary text-primary-foreground">
           Disponível
         </Badge>
       );
     }
     return (
-      <Badge variant="secondary" className="bg-secondary text-secondary-foreground">
-        Em Uso
+      <Badge variant="secondary" className="bg-primary text-secondary-foreground">
+        Alocado
       </Badge>
     );
   };
@@ -177,7 +177,7 @@ export default function IpsPage() {
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="available">Disponível</SelectItem>
-                <SelectItem value="in_use">Em Uso</SelectItem>
+                <SelectItem value="in_use">Alocado</SelectItem>
               </SelectContent>
             </Select>
           </div>

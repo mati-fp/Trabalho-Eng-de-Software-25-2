@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
@@ -12,22 +14,16 @@ export default function Home() {
         </div>
         
         <div className="mt-12 space-y-4">
-          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-lg max-w-md mx-auto">
-            <p className="text-slate-700 dark:text-slate-300 mb-4">
-              Frontend configurado com sucesso!
-            </p>
-            <div className="flex flex-col gap-2 text-sm text-slate-600 dark:text-slate-400">
-              <p>✓ Next.js 15 com App Router</p>
-              <p>✓ TypeScript</p>
-              <p>✓ Tailwind CSS</p>
-              <p>✓ shadcn/ui</p>
-              <p>✓ API Integration configurada</p>
-            </div>
+
+          <div className="mt-8">
+            <Link
+              href="/ips"
+              className="inline-block bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 px-6 py-3 rounded-lg font-semibold hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors"
+            >
+              Ver Gerenciamento de IPs →
+            </Link>
           </div>
           
-          <p className="text-slate-500 dark:text-slate-500 text-sm mt-8">
-            Pronto para desenvolvimento
-          </p>
         </div>
       </main>
     </div>

@@ -4,6 +4,5 @@
  */
 
 export * from "./ips.payloads";
-export * from "./ips.responses";
 export * from "./ips.infra";
 

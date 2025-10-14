@@ -30,12 +30,8 @@ export interface Company {
 // Room type
 export interface Room {
   id: string;
-  name: string;
-  description?: string;
-  companyId: string;
+  number: number;
   company?: Company;
-  createdAt: string;
-  updatedAt: string;
 }
 
 // IP type

@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsNumber, IsOptional, IsPositive, IsUUID } from 'class-validator';
+import { IsEnum, IsInt, IsNumber, IsOptional, IsPositive, IsString, IsUUID } from 'class-validator';
 import { IpStatus } from '../entities/ip.entity';
 import { Type } from 'class-transformer';
 
@@ -8,8 +8,8 @@ export class FindAllIpsDto {
   status?: IpStatus;
 
   @IsOptional()
-  @IsUUID()
-  companyId?: string;
+  @IsString()
+  companyName?: string;
 
   @IsOptional()
   @IsInt()

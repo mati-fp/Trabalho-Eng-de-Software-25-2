@@ -75,35 +75,54 @@ cipcei-frontend-app/
 
 ## API Integration
 
-The project includes a pre-configured API client in `src/lib/api.ts` with the following features:
+The project includes a pre-configured axios API client in `src/lib/api.ts` with the following features:
 
-- Automatic JWT token handling
+- Automatic JWT token handling via interceptors
 - Request/response interceptors
-- Error handling
+- Error handling (401 redirects)
 - TypeScript support
+- Base URL configuration from environment variables
 
 ### Usage Example
 
 ```typescript
-import { api } from '@/lib/api';
+import { api, setAuthToken, removeAuthToken } from '@/lib/api';
 
 // GET request
-const users = await api.get('/users');
+const response = await api.get('/users');
+const users = response.data;
 
 // POST request
-const newUser = await api.post('/users', {
+const response = await api.post('/users', {
   name: 'John Doe',
   email: 'john@example.com'
 });
 
+// PUT request
+await api.put('/users/1', { name: 'Jane Doe' });
+
+// DELETE request
+await api.delete('/users/1');
+
 // Error handling
 try {
-  const data = await api.get('/protected-route');
+  const response = await api.get('/protected-route');
+  console.log(response.data);
 } catch (error) {
-  if (error instanceof ApiError) {
-    console.error(error.status, error.message);
+  if (error.response) {
+    // Server responded with error
+    console.error(error.response.status, error.response.data);
+  } else if (error.request) {
+    // Request made but no response
+    console.error('No response received');
+  } else {
+    console.error('Error:', error.message);
   }
 }
+
+// Token management
+setAuthToken('your-jwt-token'); // Save token
+removeAuthToken(); // Remove token
 ```
 
 ## Adding shadcn/ui Components

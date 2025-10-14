@@ -18,7 +18,7 @@ export default function Home() {
           <div className="mt-8">
             <Link
               href="/ips"
-              className="inline-block bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 px-6 py-3 rounded-lg font-semibold hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors"
+              className="inline-block bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors"
             >
               Ver Gerenciamento de IPs →
             </Link>

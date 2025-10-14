@@ -136,13 +136,13 @@ export default function IpsPage() {
   const getStatusBadge = (status: string) => {
     if (status === "available") {
       return (
-        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+        <Badge variant="default" className="bg-primary text-primary-foreground">
           Disponível
         </Badge>
       );
     }
     return (
-      <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+      <Badge variant="secondary" className="bg-secondary text-secondary-foreground">
         Em Uso
       </Badge>
     );
@@ -160,14 +160,14 @@ export default function IpsPage() {
       </div>
 
       {/* Filters Section */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-100">
+      <div className="bg-card rounded-lg shadow p-6 mb-6">
+        <h2 className="text-lg font-semibold mb-4 text-card-foreground">
           Filtros
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Status Filter */}
           <div>
-            <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">
+            <label className="block text-sm font-medium mb-2 text-muted-foreground">
               Status
             </label>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -184,7 +184,7 @@ export default function IpsPage() {
 
           {/* Company ID Filter */}
           <div>
-            <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">
+            <label className="block text-sm font-medium mb-2 text-muted-foreground">
               ID da Empresa
             </label>
             <Input
@@ -196,7 +196,7 @@ export default function IpsPage() {
 
           {/* Room Number Filter */}
           <div>
-            <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">
+            <label className="block text-sm font-medium mb-2 text-muted-foreground">
               Número da Sala
             </label>
             <Input
@@ -209,7 +209,7 @@ export default function IpsPage() {
 
           {/* Search by Address */}
           <div>
-            <label className="block text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">
+            <label className="block text-sm font-medium mb-2 text-muted-foreground">
               Buscar por Endereço
             </label>
             <Input
@@ -221,22 +221,22 @@ export default function IpsPage() {
         </div>
 
         <div className="mt-4">
-          <Button variant="outline" onClick={handleClearFilters}>
+          <Button variant="default" onClick={handleClearFilters}>
             Limpar Filtros
           </Button>
         </div>
       </div>
 
       {/* Table Section */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
+      <div className="bg-card rounded-lg shadow overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-slate-600 dark:text-slate-400">
+          <div className="p-8 text-center text-muted-foreground">
             Carregando...
           </div>
         ) : error ? (
-          <div className="p-8 text-center text-red-600">{error}</div>
+          <div className="p-8 text-center text-destructive">{error}</div>
         ) : filteredIps.length === 0 ? (
-          <div className="p-8 text-center text-slate-600 dark:text-slate-400">
+          <div className="p-8 text-center text-muted-foreground">
             Nenhum IP encontrado.
           </div>
         ) : (
@@ -245,7 +245,7 @@ export default function IpsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead
-                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700"
+                    className="cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort("address")}
                   >
                     Endereço IP
@@ -256,7 +256,7 @@ export default function IpsPage() {
                     )}
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700"
+                    className="cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort("status")}
                   >
                     Status
@@ -277,12 +277,12 @@ export default function IpsPage() {
                     <TableCell>{getStatusBadge(ip.status)}</TableCell>
                     <TableCell>
                       {ip.macAddress || (
-                        <span className="text-slate-400">-</span>
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell>
                       {ip.room?.number || (
-                        <span className="text-slate-400">-</span>
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
                   </TableRow>
@@ -292,25 +292,25 @@ export default function IpsPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 dark:border-slate-700">
-                <div className="text-sm text-slate-600 dark:text-slate-400">
+              <div className="flex items-center justify-between px-6 py-4 border-t border-border">
+                <div className="text-sm text-muted-foreground">
                   Mostrando {startIndex + 1} a {Math.min(endIndex, filteredIps.length)} de{" "}
                   {filteredIps.length} resultados
                 </div>
                 <div className="flex gap-2">
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
                   >
                     Anterior
                   </Button>
-                  <div className="flex items-center px-3 text-sm text-slate-600 dark:text-slate-400">
+                  <div className="flex items-center px-3 text-sm text-muted-foreground">
                     Página {currentPage} de {totalPages}
                   </div>
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     onClick={() =>
                       setCurrentPage((prev) => Math.min(totalPages, prev + 1))

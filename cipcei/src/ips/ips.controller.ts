@@ -2,10 +2,9 @@ import { Patch, Param, Body, Controller, Get, Query } from '@nestjs/common';
 import { AssignIpDto } from './dto/assign-ip.dto';
 import { IpsService } from './ips.service';
 import { FindAllIpsDto } from './dto/find-all-ips.dto';
-import { Public } from 'src/auth/decorators/public.decorator';
 
 @Controller('ips')
-@Public()
+
 export class IpsController {
   constructor(private readonly ipsService: IpsService) {}
 

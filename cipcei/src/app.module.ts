@@ -8,6 +8,9 @@ import { RoomsModule } from './rooms/rooms.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { RolesGuard } from './auth/guards/roles.guard';
 
 @Module({
   imports: [
@@ -32,7 +35,18 @@ import { ConfigModule } from '@nestjs/config';
     AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService
+  providers: [
+    AppService,
+    // JwtAuthGuard executa PRIMEIRO
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    // RolesGuard executa DEPOIS (ordem importa!)
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
   ],
 })
 export class AppModule {}

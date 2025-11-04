@@ -2,13 +2,13 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { Public } from 'src/auth/decorators/public.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('users')
-@Public()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Public()
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     // Adicione a lógica para definir o 'role' como admin se necessário

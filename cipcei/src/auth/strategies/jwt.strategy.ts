@@ -1,44 +1,31 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { UsersService } from '../../users/users.service';
 import { ConfigService } from '@nestjs/config';
-
-export interface JwtPayload {
-  sub: string;      // user ID
-  email: string;
-  role: string;
-  companyId?: string;
-}
+import { UsersService } from '../../users/users.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-    private configService: ConfigService,
     private usersService: UsersService,
+    private configService: ConfigService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: "sua_chave_secreta_muito_forte_aqui_min_32_caracteres", //configService.getOrThrow<string>('JWT_SECRET'),
+      secretOrKey: configService.get<string>('JWT_SECRET') || 'your-secret-key-change-in-production',
     });
   }
 
-  async validate(payload: JwtPayload) {
-    // Buscar usuário atualizado no banco
+  async validate(payload: any) {
+    // payload.sub é o ID do usuário que foi colocado no JWT
     const user = await this.usersService.findOne(payload.sub);
     
     if (!user || !user.isActive) {
-      throw new UnauthorizedException('Usuário inativo ou não encontrado');
+      throw new UnauthorizedException('Usuário não encontrado ou inativo');
     }
 
-    // Retorna o user que será anexado ao request como req.user
-    return {
-      userId: payload.sub,
-      email: payload.email,
-      role: payload.role,
-      companyId: payload.companyId,
-      user: user, // objeto completo disponível
-    };
+    // Este objeto será anexado ao request.user
+    return user;
   }
 }

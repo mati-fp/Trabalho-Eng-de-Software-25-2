@@ -54,3 +54,11 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+
+execution-context.md
+custom-decorators.md
+authorization.md
+authentication.md
+guards.md
+

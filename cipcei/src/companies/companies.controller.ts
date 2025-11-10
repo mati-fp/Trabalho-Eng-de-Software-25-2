@@ -1,11 +1,12 @@
 import { Body, Controller, Delete, Get, HttpCode, NotFoundException, Param, Patch, Post } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CompaniesService } from './companies.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 
-
+@ApiTags('companies')
+@ApiBearerAuth('JWT-auth')
 @Controller('companies')
-
 export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) { }
 

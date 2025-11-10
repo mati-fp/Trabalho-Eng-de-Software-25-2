@@ -1,10 +1,12 @@
 import { Patch, Param, Body, Controller, Get, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AssignIpDto } from './dto/assign-ip.dto';
 import { IpsService } from './ips.service';
 import { FindAllIpsDto } from './dto/find-all-ips.dto';
 
+@ApiTags('ips')
+@ApiBearerAuth('JWT-auth')
 @Controller('ips')
-
 export class IpsController {
   constructor(private readonly ipsService: IpsService) {}
 

@@ -6,6 +6,7 @@ import { Roles } from './decorators/roles.decorator';
 import { Public } from './decorators/public.decorator';
 import { UserRole } from '../users/entities/user.entity';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { BadRequestErrorDto, UnauthorizedErrorDto, ForbiddenErrorDto } from '../common/dto/error-response.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -28,7 +29,16 @@ export class AuthController {
     description: 'Login realizado com sucesso',
     type: AuthResponseDto
   })
-  @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
+  @ApiResponse({
+    status: 400,
+    description: 'Dados de entrada inválidos',
+    type: BadRequestErrorDto
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Credenciais inválidas',
+    type: UnauthorizedErrorDto
+  })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
@@ -52,7 +62,11 @@ export class AuthController {
     }
   })
   @ApiResponse({ status: 200, description: 'Token renovado com sucesso' })
-  @ApiResponse({ status: 401, description: 'Refresh token inválido ou expirado' })
+  @ApiResponse({
+    status: 401,
+    description: 'Refresh token inválido ou expirado',
+    type: UnauthorizedErrorDto
+  })
   async refresh(@Body('refresh_token') refreshToken: string) {
     return this.authService.refreshToken(refreshToken);
   }
@@ -68,8 +82,16 @@ export class AuthController {
     description: 'Rota protegida que requer autenticação JWT e role de ADMIN'
   })
   @ApiResponse({ status: 200, description: 'Acesso permitido' })
-  @ApiResponse({ status: 401, description: 'Não autenticado' })
-  @ApiResponse({ status: 403, description: 'Sem permissão (não é Admin)' })
+  @ApiResponse({
+    status: 401,
+    description: 'Não autenticado',
+    type: UnauthorizedErrorDto
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Sem permissão (não é Admin)',
+    type: ForbiddenErrorDto
+  })
   async testGuard(): Promise<String>{
     return "TESTEI O GUARD - SOMENTE ADMIN";
   }

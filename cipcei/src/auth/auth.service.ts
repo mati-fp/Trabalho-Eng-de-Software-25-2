@@ -5,7 +5,13 @@ import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
-import { JwtPayload } from './strategies/jwt.strategy';
+
+export interface JwtPayload {
+  sub: string;
+  email: string;
+  role: string;
+  companyId?: string;
+}
 
 @Injectable()
 export class AuthService {
@@ -89,7 +95,7 @@ export class AuthService {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       });
 
-      const user = await this.usersService.findOneByEmail(payload.sub);
+      const user = await this.usersService.findOne(payload.sub);
 
       if (!user || !user.isActive) {
         throw new UnauthorizedException('Usuário inválido');
@@ -111,13 +117,4 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token inválido ou expirado');
     }
   }
-
-  /**
-   * Hash de senha usando bcrypt (10 rounds conforme documentação)
-   * Removido pois o hash já é feito na entidade User com @BeforeInsert
-   */
-  // async hashPassword(password: string): Promise<string> {
-  //   const saltRounds = 10;
-  //   return bcrypt.hash(password, saltRounds);
-  // }
 }

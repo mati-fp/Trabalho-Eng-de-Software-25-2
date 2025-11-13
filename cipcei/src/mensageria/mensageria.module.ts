@@ -7,9 +7,9 @@ import { Ip } from '../ips/entities/ip.entity';
 import { Room } from '../rooms/entities/room.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Company, Ip, Room])],
-  controllers: [MensageriaController],
-  providers: [MensageriaService],
-  exports: [MensageriaService],
+  imports: [TypeOrmModule.forFeature([Company, Ip, Room])], // registra as entidades pro service poder usar
+  controllers: [MensageriaController], // endpoints de email
+  providers: [MensageriaService], // lógica de envio/recebimento
+  exports: [MensageriaService], // deixa outros módulos usarem (tipo o IpsModule)
 })
 export class MensageriaModule {}

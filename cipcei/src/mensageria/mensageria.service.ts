@@ -17,10 +17,11 @@ export class MensageriaService {
     @InjectRepository(Ip) private readonly ipRepo: Repository<Ip>,
     @InjectRepository(Room) private readonly roomRepo: Repository<Room>,
   ) {
+    // configura o nodemailer com as credenciais do .env
     this.transporter = nodemailer.createTransport({
       host: process.env.MAIL_HOST,
       port: Number(process.env.MAIL_PORT),
-      secure: Number(process.env.MAIL_PORT) === 465,
+      secure: Number(process.env.MAIL_PORT) === 465, // SSL só se for porta 465
       auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS,
@@ -28,7 +29,9 @@ export class MensageriaService {
     });
   }
 
+  // UC10: dispara email quando IP é liberado pra empresa
   async sendIpLiberado(companyId: string, ipId: string) {
+    // busca a empresa com os dados do usuário pra pegar o email
     const company = await this.companyRepo.findOne({
       where: { id: companyId },
       relations: ['room', 'user'],
@@ -36,9 +39,11 @@ export class MensageriaService {
     if (!company) throw new NotFoundException(`Empresa ${companyId} não encontrada`);
     if (!company.user?.email) throw new BadRequestException('Empresa sem e-mail cadastrado');
 
+    // pega os dados do IP que foi liberado
     const ip = await this.ipRepo.findOne({ where: { id: ipId }, relations: ['room'] });
     if (!ip) throw new NotFoundException(`IP ${ipId} não encontrado`);
 
+    // monta o email com as informacões
     const subject = `IP liberado: ${ip.address}`;
     const html = `
       <p>Olá ${company.user.name},</p>
@@ -54,6 +59,7 @@ export class MensageriaService {
     await this.sendMail(company.user.email, subject, html);
   }
 
+  // UC11: email de cancelamento quando IP é liberado
   async sendIpCancelado(companyId: string, ipId: string) {
     const company = await this.companyRepo.findOne({
       where: { id: companyId },
@@ -80,7 +86,6 @@ export class MensageriaService {
   }
 
   async fetchIncomingEmails(limit = 10) {
-    // Stub de recebimento (UC futuro para processar solicitações)
     try {
       const config = {
         imap: {
@@ -114,7 +119,7 @@ export class MensageriaService {
   }
 
   private async sendMail(to: string, subject: string, html: string) {
-    const from = process.env.MAIL_FROM || 'CIPCEI <no-reply@cipcei.local>';
+    const from = process.env.MAIL_FROM || 'CIPCEI <no-reply@cipcei.local>'; //email padrão de remetente
     await this.transporter.sendMail({ from, to, subject, html });
     this.logger.log(`Email enviado para ${to}: ${subject}`);
   }

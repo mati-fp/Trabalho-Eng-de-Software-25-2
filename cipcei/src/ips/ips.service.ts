@@ -7,6 +7,7 @@ import { CreateIpDto } from "./dto/create-ip.dto";
 import { AssignIpDto } from "./dto/assign-ip.dto";
 import { Company } from "src/companies/entities/company.entity";
 import { FindAllIpsDto } from "./dto/find-all-ips.dto";
+import { MensageriaService } from '../mensageria/mensageria.service';
 
 @Injectable()
 export class IpsService {
@@ -17,6 +18,7 @@ export class IpsService {
     private readonly roomRepository: Repository<Room>,
     @InjectRepository(Company)
     private readonly companyRepository: Repository<Company>,
+    private readonly mensageriaService: MensageriaService,
   ) {}
 
   async findAll(findAllIpsDto: FindAllIpsDto): Promise<Ip[]> {
@@ -113,7 +115,14 @@ export class IpsService {
     ip.status = IpStatus.IN_USE;
     ip.macAddress = macAddress;
 
-    return this.ipRepository.save(ip);
+    const saved = await this.ipRepository.save(ip);
+
+    // UC10: envio de email (ignora falha)
+    try {
+      await this.mensageriaService.sendIpLiberado(company.id, saved.id);
+    } catch (e) {}
+
+    return saved;
   }
 
   async unassign(ipId: string): Promise<Ip> {
@@ -127,7 +136,22 @@ export class IpsService {
     }
     ip.status = IpStatus.AVAILABLE;
     ip.macAddress = '';
-    
-    return this.ipRepository.save(ip);
+
+    const saved = await this.ipRepository.save(ip);
+
+    // Encontrar empresa ligada à sala para notificar (se existir)
+    const company = await this.companyRepository.findOne({
+      where: { room: { id: ip.room?.id } },
+      relations: ['room', 'user'],
+    });
+
+    if (company) {
+      // UC11: envio de email
+      try {
+        await this.mensageriaService.sendIpCancelado(company.id, saved.id);
+      } catch (e) {}
+    }
+
+    return saved;
   }
 }

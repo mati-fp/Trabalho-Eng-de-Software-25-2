@@ -40,9 +40,9 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, documentFactory);
 
   app.useGlobalPipes(new ValidationPipe({
-    // whitelist: true, // Remove propriedades não definidas no DTO
-    // forbidNonWhitelisted: true, // Lança erro se houver propriedades extras
-    // transform: true, // Transforma os tipos automaticamente
+    whitelist: true, // Remove propriedades não definidas no DTO
+    forbidNonWhitelisted: true, // Lança erro se houver propriedades extras
+    transform: true, // Transforma os tipos automaticamente
   }));
 
   await app.listen(process.env.PORT ?? 3000);

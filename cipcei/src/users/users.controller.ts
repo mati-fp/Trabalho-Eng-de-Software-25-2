@@ -3,8 +3,11 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Public } from '../auth/decorators/public.decorator';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { UserRole } from './entities/user.entity';
 
 @ApiTags('users')
+@Roles([UserRole.ADMIN])
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

@@ -44,13 +44,17 @@ export class AuthService {
       companyId: user.company?.id,
     };
 
+    const jwtExpiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '15m';
+    const jwtRefreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET') || 'fallback-refresh-secret';
+    const jwtRefreshExpiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
+
     const access_token = this.jwtService.sign(payload, {
-      expiresIn: '15m', // Token de acesso curto conforme documentação
+      expiresIn: jwtExpiresIn as any,
     });
 
     const refresh_token = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: '7d', // Refresh token de 7 dias
+      secret: jwtRefreshSecret,
+      expiresIn: jwtRefreshExpiresIn as any,
     });
 
     return {
@@ -91,8 +95,11 @@ export class AuthService {
    */
   async refreshToken(refreshToken: string): Promise<{ access_token: string }> {
     try {
+      const jwtRefreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET') || 'fallback-refresh-secret';
+      const jwtExpiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '15m';
+
       const payload = this.jwtService.verify(refreshToken, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        secret: jwtRefreshSecret,
       });
 
       const user = await this.usersService.findOne(payload.sub);
@@ -110,7 +117,7 @@ export class AuthService {
 
       return {
         access_token: this.jwtService.sign(newPayload, {
-          expiresIn: '15m',
+          expiresIn: jwtExpiresIn as any,
         }),
       };
     } catch (error) {

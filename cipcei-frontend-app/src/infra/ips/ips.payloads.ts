@@ -10,7 +10,7 @@ export interface AssignIpPayload {
 
 export interface FindAllIpsParams {
   status?: "available" | "in_use";
-  companyId?: string;
+  companyName?: string;
   roomNumber?: number;
 }
 

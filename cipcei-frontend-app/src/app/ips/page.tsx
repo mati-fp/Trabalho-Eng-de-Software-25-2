@@ -33,7 +33,7 @@ export default function IpsPage() {
 
   // Filter states
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [companyIdFilter, setCompanyIdFilter] = useState<string>("");
+  const [companyNameFilter, setCompanyNameFilter] = useState<string>("");
   const [roomNumberFilter, setRoomNumberFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -58,8 +58,8 @@ export default function IpsPage() {
           params.status = statusFilter as "available" | "in_use";
         }
 
-        if (companyIdFilter.trim()) {
-          params.companyId = companyIdFilter.trim();
+        if (companyNameFilter.trim()) {
+          params.companyName = companyNameFilter.trim();
         }
 
         if (roomNumberFilter.trim()) {
@@ -78,7 +78,7 @@ export default function IpsPage() {
     };
 
     fetchIps();
-  }, [statusFilter, companyIdFilter, roomNumberFilter]);
+  }, [statusFilter, companyNameFilter, roomNumberFilter]);
 
   // Apply local search and sorting
   useEffect(() => {
@@ -117,7 +117,7 @@ export default function IpsPage() {
   // Clear all filters
   const handleClearFilters = () => {
     setStatusFilter("all");
-    setCompanyIdFilter("");
+    setCompanyNameFilter("");
     setRoomNumberFilter("");
     setSearchQuery("");
   };
@@ -182,15 +182,15 @@ export default function IpsPage() {
             </Select>
           </div>
 
-          {/* Company ID Filter */}
+          {/* Company Name Filter */}
           <div>
             <label className="block text-sm font-medium mb-2 text-muted-foreground">
-              ID da Empresa
+              Nome da Empresa
             </label>
             <Input
-              placeholder="UUID da empresa"
-              value={companyIdFilter}
-              onChange={(e) => setCompanyIdFilter(e.target.value)}
+              placeholder="Nome da empresa"
+              value={companyNameFilter}
+              onChange={(e) => setCompanyNameFilter(e.target.value)}
             />
           </div>
 
@@ -268,6 +268,7 @@ export default function IpsPage() {
                   </TableHead>
                   <TableHead>Endereço MAC</TableHead>
                   <TableHead>Sala</TableHead>
+                  <TableHead>Empresa</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -282,6 +283,11 @@ export default function IpsPage() {
                     </TableCell>
                     <TableCell>
                       {ip.room?.number || (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {ip.room?.company?.user?.name || (
                         <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>

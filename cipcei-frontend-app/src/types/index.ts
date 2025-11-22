@@ -22,7 +22,7 @@ export interface AuthResponse {
 // Company type
 export interface Company {
   id: string;
-  name: string;
+  user?: User;
   createdAt: string;
   updatedAt: string;
 }

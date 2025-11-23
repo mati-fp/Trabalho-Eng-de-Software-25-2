@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { findAllIps, FindAllIpsParams } from "@/infra/ips";
+import { IpsAPI, FindAllIpsParams } from "@/infra/ips";
 import { IP } from "@/types";
 import {
   Table,
@@ -66,7 +66,7 @@ export default function IpsPage() {
           params.roomNumber = parseInt(roomNumberFilter.trim());
         }
 
-        const data = await findAllIps(params);
+        const data = await IpsAPI.findAllIps(params);
         setIps(data);
         setFilteredIps(data);
       } catch (err) {

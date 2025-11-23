@@ -51,6 +51,31 @@ services:
     stdin_open: true
     tty: true
 
+  # # Serviço do frontend Next.js
+  # frontend:
+  #   build:
+  #     context: ../cipcei-frontend-app
+  #     dockerfile: Dockerfile.dev
+  #   container_name: frontend-cipcei
+  #   restart: always
+  #   ports:
+  #     - "3001:3001"
+  #   volumes:
+  #     # Volume bind para hot-reload - mapeia código local para o container
+  #     - ../cipcei-frontend-app:/app
+  #     - /app/node_modules # Evita sobrescrever node_modules do container
+  #     - /app/.next # Cache do Next.js
+  #   environment:
+  #     # URL da API do backend (usado pelo navegador do usuário)
+  #     NEXT_PUBLIC_API_URL: http://localhost:3000
+  #     NODE_ENV: development
+  #   depends_on:
+  #     - app
+  #   networks:
+  #     - cipcei-network
+  #   stdin_open: true
+  #   tty: true
+
 volumes:
   postgres_data:
 

@@ -8,7 +8,8 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "user";
+  role: "admin" | "company";
+  companyId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -16,6 +17,7 @@ export interface User {
 // Auth response type
 export interface AuthResponse {
   access_token: string;
+  refresh_token?: string;
   user: User;
 }
 

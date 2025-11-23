@@ -15,11 +15,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-type Role = "Empresa" | "Administrador";
-
 export default function LoginPage() {
   const router = useRouter();
-  const [role, setRole] = useState<Role>("Empresa");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -44,13 +41,14 @@ export default function LoginPage() {
 
       // Redirect to home page
       router.push("/");
-    } catch (err: any) {
+    } catch (err) {
       // User-friendly error messages
-      if (err.response?.status === 401) {
+      const error = err as { response?: { status?: number }; message?: string };
+      if (error.response?.status === 401) {
         setError("Email ou senha incorretos. Por favor, tente novamente.");
-      } else if (err.response?.status === 400) {
+      } else if (error.response?.status === 400) {
         setError("Por favor, verifique os dados informados.");
-      } else if (err.message === "Network Error" || !err.response) {
+      } else if (error.message === "Network Error" || !error.response) {
         setError("Erro de conexão. Verifique sua internet e tente novamente.");
       } else {
         setError("Ocorreu um erro ao fazer login. Tente novamente mais tarde.");

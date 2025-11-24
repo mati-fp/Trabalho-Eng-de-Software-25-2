@@ -7,6 +7,7 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: cipcei_db
+      TZ: America/Sao_Paulo
     ports:
       - "5432:5432"
     volumes:
@@ -27,22 +28,18 @@ services:
     container_name: backend-cipcei
     restart: always
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:${PORT:-3000}"
       - "9229:9229" # Porta para debug (opcional)
     volumes:
       # Volume bind para hot-reload - mapeia código local para o container
       - .:/app
       - /app/node_modules # Evita sobrescrever node_modules do container
+    env_file:
+      - .env
     environment:
-      # Configurações de banco de dados
+      # Sobrescreve DATABASE_HOST para usar o nome do serviço Docker
       DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_USER: user
-      DATABASE_PASSWORD: password
-      DATABASE_NAME: cipcei_db
-      # Ambiente
-      NODE_ENV: development
-      PORT: 3000
+      TZ: America/Sao_Paulo
     depends_on:
       postgres:
         condition: service_healthy

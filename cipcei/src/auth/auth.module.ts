@@ -9,20 +9,22 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
-    //ConfigModule,
     UsersModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'your-secret-key-change-in-production',
-        signOptions: {
-          expiresIn: configService.get('JWT_EXPIRES_IN') || '1d', // 1 dia
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET') || 'fallback-secret';
+        const expiresIn = configService.get<string>('JWT_EXPIRES_IN') || '15m';
+
+        return {
+          secret,
+          signOptions: { expiresIn: expiresIn as any },
+        };
+      },
       inject: [ConfigService],
     }),
-    ],
+  ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
   exports: [JwtModule],

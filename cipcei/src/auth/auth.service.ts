@@ -45,7 +45,7 @@ export class AuthService {
     };
 
     const access_token = this.jwtService.sign(payload, {
-      expiresIn: '15m', // Token de acesso curto conforme documentação
+      expiresIn: '1m', // Token de acesso de 1 dia
     });
 
     const refresh_token = this.jwtService.sign(payload, {

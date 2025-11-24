@@ -21,6 +21,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks";
+import IpActionsMenu from "./components/IpActionsMenu";
 
 type SortField = "address" | "status";
 type SortOrder = "asc" | "desc";
@@ -33,8 +35,6 @@ export default function IpsPage() {
 
   // Filter states
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [companyNameFilter, setCompanyNameFilter] = useState<string>("");
-  const [roomNumberFilter, setRoomNumberFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Sorting states
@@ -44,6 +44,7 @@ export default function IpsPage() {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const { profile } = useAuth();
 
   // Fetch IPs from API
   useEffect(() => {
@@ -57,15 +58,7 @@ export default function IpsPage() {
         if (statusFilter !== "all") {
           params.status = statusFilter as "available" | "in_use";
         }
-
-        if (companyNameFilter.trim()) {
-          params.companyName = companyNameFilter.trim();
-        }
-
-        if (roomNumberFilter.trim()) {
-          params.roomNumber = parseInt(roomNumberFilter.trim());
-        }
-
+        //params.companyId = profile?.companyId;
         const data = await IpsAPI.findAllIps(params);
         setIps(data);
         setFilteredIps(data);
@@ -78,7 +71,7 @@ export default function IpsPage() {
     };
 
     fetchIps();
-  }, [statusFilter, companyNameFilter, roomNumberFilter]);
+  }, [statusFilter]);
 
   // Apply local search and sorting
   useEffect(() => {
@@ -117,8 +110,6 @@ export default function IpsPage() {
   // Clear all filters
   const handleClearFilters = () => {
     setStatusFilter("all");
-    setCompanyNameFilter("");
-    setRoomNumberFilter("");
     setSearchQuery("");
   };
 
@@ -164,7 +155,7 @@ export default function IpsPage() {
         <h2 className="text-lg font-semibold mb-4 text-card-foreground">
           Filtros
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="flex items-end gap-4 ">
           {/* Status Filter */}
           <div>
             <label className="block text-sm font-medium mb-2 text-muted-foreground">
@@ -182,30 +173,6 @@ export default function IpsPage() {
             </Select>
           </div>
 
-          {/* Company Name Filter */}
-          <div>
-            <label className="block text-sm font-medium mb-2 text-muted-foreground">
-              Nome da Empresa
-            </label>
-            <Input
-              placeholder="Nome da empresa"
-              value={companyNameFilter}
-              onChange={(e) => setCompanyNameFilter(e.target.value)}
-            />
-          </div>
-
-          {/* Room Number Filter */}
-          <div>
-            <label className="block text-sm font-medium mb-2 text-muted-foreground">
-              Número da Sala
-            </label>
-            <Input
-              type="number"
-              placeholder="Ex: 101"
-              value={roomNumberFilter}
-              onChange={(e) => setRoomNumberFilter(e.target.value)}
-            />
-          </div>
 
           {/* Search by Address */}
           <div>
@@ -218,9 +185,8 @@ export default function IpsPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-        </div>
 
-        <div className="mt-4">
+
           <Button variant="default" onClick={handleClearFilters}>
             Limpar Filtros
           </Button>
@@ -256,7 +222,7 @@ export default function IpsPage() {
                     )}
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer hover:bg-muted/50"
+                    className="cursor-pointer hover:bg-muted/50 text-center"
                     onClick={() => handleSort("status")}
                   >
                     Status
@@ -266,30 +232,32 @@ export default function IpsPage() {
                       </span>
                     )}
                   </TableHead>
-                  <TableHead>Endereço MAC</TableHead>
-                  <TableHead>Sala</TableHead>
-                  <TableHead>Empresa</TableHead>
+                  <TableHead className="text-center">Endereço MAC</TableHead>
+                  <TableHead className="text-center">Sala</TableHead>
+                  <TableHead className="text-center">Data de vencimento</TableHead>
+                  <TableHead className="w-[100px] text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {currentIps.map((ip) => (
                   <TableRow key={ip.id}>
                     <TableCell className="font-medium">{ip.address}</TableCell>
-                    <TableCell>{getStatusBadge(ip.status)}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">{getStatusBadge(ip.status)}</TableCell>
+                    <TableCell className="text-center">
                       {ip.macAddress || (
                         <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       {ip.room?.number || (
                         <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
-                    <TableCell>
-                      {ip.room?.company?.user?.name || (
-                        <span className="text-muted-foreground">-</span>
-                      )}
+                    <TableCell className="text-center">
+                    {"25/11/2025"}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <IpActionsMenu ip={ip} />
                     </TableCell>
                   </TableRow>
                 ))}

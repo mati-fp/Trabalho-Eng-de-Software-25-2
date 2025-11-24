@@ -18,6 +18,7 @@ import {
 import { getAuthToken, removeAuthToken } from "@/lib/api";
 import { decodeJWT } from "@/lib/jwt";
 import Link from "next/link";
+import { useAuth } from "@/hooks";
 
 interface MenuItem {
   label: string;
@@ -26,45 +27,33 @@ interface MenuItem {
 }
 
 const menuItemsAdmin: MenuItem[] = [
-  { label: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, href: "/home" },
-  { label: "Tickets", icon: <Ticket className="w-5 h-5" />, href: "/dashboard/tickets" },
-  { label: "Tabela de IPs", icon: <Database className="w-5 h-5" />, href: "/dashboard/ips" },
-  { label: "Clientes", icon: <Users className="w-5 h-5" />, href: "/dashboard/clients" },
+  { label: "Home", icon: <LayoutDashboard className="w-5 h-5" />, href: "/admin/home" },
+  { label: "Solicitações", icon: <Ticket className="w-5 h-5" />, href: "/admin/requests" },
+  { label: "Tabela de IPs", icon: <Database className="w-5 h-5" />, href: "/admin/ips" },
+  { label: "Clientes", icon: <Users className="w-5 h-5" />, href: "/admin/clients" },
 ];
 
 const menuItemsCompany: MenuItem[] = [
-  { label: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, href: "/home" },
-  { label: "Solicitar IP", icon: <Ticket className="w-5 h-5" />, href: "/dashboard/request-ip" },
-  { label: "Ajuda (MAC)", icon: <Database className="w-5 h-5" />, href: "/dashboard/help-mac" },
+  { label: "Ips alocados", icon: <LayoutDashboard className="w-5 h-5" />, href: "/company/ips" },
+  { label: "Solicitar IP", icon: <Ticket className="w-5 h-5" />, href: "/company/request-ip" },
+  { label: "Ajuda (MAC)", icon: <Database className="w-5 h-5" />, href: "/company/help-mac" },
 ];
 
-export default function DashboardLayout({
+export default function CustomLayout({
   children,
+  type,
 }: {
   children: React.ReactNode;
+  type: "admin" | "company";
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [userInfo, setUserInfo] = useState<{ name?: string; email?: string; role?: string } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
+  const { profile } = useAuth();
+
   useEffect(() => {
-    const token = getAuthToken();
-    if (!token) {
-      router.push("/login");
-      return;
-    }
-
-    const decoded = decodeJWT(token);
-    if (decoded) {
-      setUserInfo({
-        name: decoded.name as string || "Usuário",
-        email: decoded.email as string || "",
-        role: decoded.role as string || "admin",
-      });
-    }
-
     // Handle mobile responsiveness
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -78,12 +67,13 @@ export default function DashboardLayout({
     return () => window.removeEventListener("resize", checkMobile);
   }, [router]);
 
+
   const handleLogout = () => {
     removeAuthToken();
     router.push("/login");
   };
 
-  const userRoleLabel = userInfo?.role === "admin" ? "ADMINISTRADOR" : "EMPRESA";
+  const userRoleLabel = profile?.role === "admin" ? "ADMINISTRADOR" : "EMPRESA";
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
@@ -111,11 +101,11 @@ export default function DashboardLayout({
         </div>
 
         {/* User Profile Section */}
-        {userInfo && (
+        {profile && (
           <div className="px-6 py-3 border-b border-[var(--muted-foreground)]">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-muted font-semibold">
-                {userInfo.role === "admin" ? (
+                {profile.role === "admin" ? (
                   <Shield className="w-6 h-6" />
                 ) : (
                   <User className="w-6 h-6" />
@@ -126,7 +116,7 @@ export default function DashboardLayout({
                   {userRoleLabel}
                 </p>
                 <p className="text-muted text-xs truncate">
-                  {userInfo.email}
+                  {profile.email}
                 </p>
               </div>
             </div>
@@ -136,7 +126,7 @@ export default function DashboardLayout({
         {/* Navigation Menu */}
         <nav className="flex-1 overflow-y-auto p-4">
           <ul className="space-y-2">
-            {(userInfo?.role === "admin" ? menuItemsAdmin : menuItemsCompany).map((item) => {
+            {(type === "admin" ? menuItemsAdmin : menuItemsCompany).map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
               return (
                 <li key={item.href}>

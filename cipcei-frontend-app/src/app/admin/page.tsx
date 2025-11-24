@@ -1,4 +1,4 @@
-export default function DashboardPage() {
+export default function AdminPage() {
   return (
     <div className="p-6 md:p-8">
       <div className="mb-8">

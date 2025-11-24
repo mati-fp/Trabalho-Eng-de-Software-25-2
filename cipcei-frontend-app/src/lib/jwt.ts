@@ -4,6 +4,7 @@ export interface JWTPayload {
   name?: string;
   role?: string;
   [key: string]: unknown;
+  companyId?: string;
 }
 
 export function decodeJWT(token: string): JWTPayload | null {

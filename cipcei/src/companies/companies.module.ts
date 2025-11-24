@@ -6,10 +6,11 @@ import { Company } from './entities/company.entity';
 import { RoomsModule } from 'src/rooms/rooms.module';
 import { Room } from 'src/rooms/entities/room.entity';
 import { User } from 'src/users/entities/user.entity';
+import { Ip } from 'src/ips/entities/ip.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Company, Room, User]),
+    TypeOrmModule.forFeature([Company, Room, User, Ip]),
     RoomsModule
   ],
   controllers: [CompaniesController],

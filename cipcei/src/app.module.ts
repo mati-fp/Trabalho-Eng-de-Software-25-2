@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { CompaniesModule } from './companies/companies.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { IpsModule } from './ips/ips.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { IpRequestsModule } from './ip-requests/ip-requests.module';
+import { IpHistoryModule } from './ip-history/ip-history.module';
+import { HelpModule } from './help/help.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
@@ -32,15 +33,16 @@ import { RolesGuard } from './auth/guards/roles.guard';
       }),
       inject: [ConfigService],
     }),
-    CompaniesModule,
-    IpsModule,
-    RoomsModule,
-    UsersModule,
     AuthModule,
+    UsersModule,
+    CompaniesModule,
+    RoomsModule,
+    IpsModule,
+    IpRequestsModule,
+    IpHistoryModule,
+    HelpModule,
   ],
-  controllers: [AppController],
   providers: [
-    AppService,
     // JwtAuthGuard executa PRIMEIRO
     {
       provide: APP_GUARD,

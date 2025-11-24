@@ -13,10 +13,12 @@ export class CompaniesService {
   constructor(
   @InjectRepository(Company)
   private readonly companyRepository: Repository<Company>,
-  @InjectRepository(Room) 
+  @InjectRepository(Room)
   private readonly roomRepository: Repository<Room>,
   @InjectRepository(User)
   private readonly userRepository: Repository<User>,
+  @InjectRepository(Ip)
+  private readonly ipRepository: Repository<Ip>,
   private dataSource: DataSource,
   ) {}
 
@@ -55,7 +57,13 @@ export class CompaniesService {
     });
 
     // 6. Salvar a nova empresa
-    return this.companyRepository.save(newCompany);
+    const savedCompany = await this.companyRepository.save(newCompany);
+
+    // 7. Atualizar o usuário para apontar de volta para a empresa
+    savedUser.company = savedCompany;
+    await this.userRepository.save(savedUser);
+
+    return savedCompany;
   }
 
   async findOne(id: string): Promise<Company | null> {
@@ -123,5 +131,51 @@ export class CompaniesService {
       // A relação da empresa com a sala é "desvinculada" implicitamente pelo soft delete.
       // A sala agora fica livre para ser associada a uma nova empresa.
     });
+  }
+
+  /**
+   * Company visualiza TODOS os seus IPs (ativos + expirados)
+   */
+  async getAllMyIps(companyId: string): Promise<Ip[]> {
+    return this.ipRepository.find({
+      where: { company: { id: companyId } },
+      order: { assignedAt: 'DESC' },
+    });
+  }
+
+  /**
+   * Company visualiza apenas IPs ativos (IN_USE)
+   */
+  async getActiveIps(companyId: string): Promise<Ip[]> {
+    return this.ipRepository.find({
+      where: {
+        company: { id: companyId },
+        status: IpStatus.IN_USE,
+      },
+      order: { assignedAt: 'DESC' },
+    });
+  }
+
+  /**
+   * Company visualiza IPs que podem ser renovados
+   * (IPs temporários expirados ou próximos de expirar - 7 dias)
+   */
+  async getRenewableIps(companyId: string): Promise<Ip[]> {
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+
+    return this.ipRepository
+      .createQueryBuilder('ip')
+      .where('ip.companyId = :companyId', { companyId })
+      .andWhere('ip.isTemporary = :isTemporary', { isTemporary: true })
+      .andWhere(
+        '(ip.status = :expired OR (ip.expiresAt IS NOT NULL AND ip.expiresAt <= :sevenDays))',
+        {
+          expired: IpStatus.EXPIRED,
+          sevenDays: sevenDaysFromNow,
+        },
+      )
+      .orderBy('ip.expiresAt', 'ASC')
+      .getMany();
   }
 }

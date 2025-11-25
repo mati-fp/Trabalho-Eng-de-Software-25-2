@@ -103,33 +103,33 @@ export class CompaniesService {
         await transactionalEntityManager.update(User, company.user.id, { isActive: false });
       }
 
-      // 5. NOVA LÓGICA: Liberar os IPs associados à sala da empresa
-      if (company.room) {
-        // Encontra todos os IDs de IPs que estão 'in_use' na sala da empresa
-        const ipsToRelease = await transactionalEntityManager.find(Ip, {
-          select: ['id'], // Selecionamos apenas o ID para eficiência
-          where: {
-            room: { id: company.room.id },
-            status: IpStatus.IN_USE,
-          },
-        });
+      // 5. Liberar apenas os IPs atribuídos a ESTA empresa (não todos da sala)
+      // Importante: com múltiplas empresas por sala, só liberamos IPs desta empresa específica
+      const ipsToRelease = await transactionalEntityManager.find(Ip, {
+        select: ['id'],
+        where: {
+          company: { id: company.id }, // Filtra por empresa, não por sala
+          status: IpStatus.IN_USE,
+        },
+      });
 
-        // Se encontrarmos algum IP para liberar...
-        if (ipsToRelease.length > 0) {
-          const ipIdsToRelease = ipsToRelease.map(ip => ip.id);
-          
-          // ... atualizamos todos eles de uma só vez
-          await transactionalEntityManager.update(Ip, 
-            { id: In(ipIdsToRelease) }, // Usamos o operador 'In' para atualizar múltiplos IPs
-            {
-              status: IpStatus.AVAILABLE,
-              macAddress: undefined, // Limpa o MAC Address
-            }
-          );
-        }
+      if (ipsToRelease.length > 0) {
+        const ipIdsToRelease = ipsToRelease.map(ip => ip.id);
+
+        await transactionalEntityManager.update(Ip,
+          { id: In(ipIdsToRelease) },
+          {
+            status: IpStatus.AVAILABLE,
+            company: undefined as any, // Remove associação com a empresa
+            macAddress: undefined,
+            userName: undefined,
+            assignedAt: undefined,
+            expiresAt: undefined,
+            isTemporary: false,
+          }
+        );
       }
-      // A relação da empresa com a sala é "desvinculada" implicitamente pelo soft delete.
-      // A sala agora fica livre para ser associada a uma nova empresa.
+      // A empresa é removida mas a sala permanece disponível para outras empresas
     });
   }
 

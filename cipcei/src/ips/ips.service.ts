@@ -20,16 +20,15 @@ export class IpsService {
   ) {}
 
   async findAll(findAllIpsDto: FindAllIpsDto): Promise<Ip[]> {
-
     const { status, companyName, roomNumber } = findAllIpsDto;
 
     const queryBuilder = this.ipRepository.createQueryBuilder('ip');
 
     queryBuilder
-     .leftJoinAndSelect('ip.room', 'room')
-     .leftJoinAndSelect('room.company', 'company')
-     .leftJoinAndSelect('company.user', 'user')
-     .select([
+      .leftJoinAndSelect('ip.room', 'room')
+      .leftJoinAndSelect('ip.company', 'company')
+      .leftJoinAndSelect('company.user', 'user')
+      .select([
         // Campos do IP
         'ip.id',
         'ip.address',
@@ -38,20 +37,20 @@ export class IpsService {
         // Campos do Room
         'room.id',
         'room.number',
-        // Campos da Company
+        // Campos da Company (atribuída ao IP)
         'company.id',
         // Campos do User
         'user.name',
         'user.isActive',
       ]);
-      
+
     if (status) {
       queryBuilder.andWhere('ip.status = :status', { status });
     }
 
     if (companyName) {
-      queryBuilder.andWhere('LOWER(user.name) LIKE LOWER(:companyName)', { 
-        companyName: `%${companyName}%` 
+      queryBuilder.andWhere('LOWER(user.name) LIKE LOWER(:companyName)', {
+        companyName: `%${companyName}%`,
       });
     }
 

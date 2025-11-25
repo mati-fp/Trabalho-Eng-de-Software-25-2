@@ -1,6 +1,6 @@
 import { Room } from 'src/rooms/entities/room.entity';
 import { User } from 'src/users/entities/user.entity';
-import { Entity, Column, PrimaryGeneratedColumn, OneToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, OneToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne } from 'typeorm';
 
 @Entity()
 export class Company {
@@ -11,7 +11,7 @@ export class Company {
   @JoinColumn()
   user: User;
 
-  @OneToOne(() => Room, (room) => room.company)
+  @ManyToOne(() => Room, (room) => room.companies)
   @JoinColumn()
   room: Room;
 

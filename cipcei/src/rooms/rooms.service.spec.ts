@@ -1,18 +1,29 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { NotFoundException } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
 import { Room } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
+import { Company } from '../companies/entities/company.entity';
 
 describe('RoomsService', () => {
   let service: RoomsService;
   let repository: jest.Mocked<Repository<Room>>;
 
+  const mockCompany: Company = {
+    id: 'company-uuid-123',
+    user: null as any,
+    room: null as any,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: undefined,
+  };
+
   const mockRoom: Room = {
     id: 'room-uuid-123',
     number: 101,
-    company: null,
+    companies: [mockCompany],
     ips: [],
   };
 
@@ -104,6 +115,80 @@ describe('RoomsService', () => {
       repository.save.mockRejectedValue(uniqueError);
 
       await expect(service.create(createRoomDto)).rejects.toThrow();
+    });
+  });
+
+  describe('findAll', () => {
+    it('should return all rooms with companies', async () => {
+      repository.find.mockResolvedValue([mockRoom]);
+
+      const result = await service.findAll();
+
+      expect(result).toEqual([mockRoom]);
+      expect(repository.find).toHaveBeenCalledWith({
+        relations: ['companies', 'companies.user'],
+      });
+    });
+
+    it('should return empty array when no rooms exist', async () => {
+      repository.find.mockResolvedValue([]);
+
+      const result = await service.findAll();
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return a room by id', async () => {
+      repository.findOne.mockResolvedValue(mockRoom);
+
+      const result = await service.findOne(mockRoom.id);
+
+      expect(result).toEqual(mockRoom);
+      expect(repository.findOne).toHaveBeenCalledWith({
+        where: { id: mockRoom.id },
+        relations: ['companies', 'companies.user', 'ips'],
+      });
+    });
+
+    it('should throw NotFoundException when room not found', async () => {
+      repository.findOne.mockResolvedValue(null);
+
+      await expect(service.findOne('non-existent-id')).rejects.toThrow(
+        new NotFoundException('Sala com ID "non-existent-id" não encontrada'),
+      );
+    });
+  });
+
+  describe('getCompanies', () => {
+    it('should return companies for a room', async () => {
+      repository.findOne.mockResolvedValue(mockRoom);
+
+      const result = await service.getCompanies(mockRoom.id);
+
+      expect(result).toEqual(mockRoom.companies);
+      expect(repository.findOne).toHaveBeenCalledWith({
+        where: { id: mockRoom.id },
+        relations: ['companies', 'companies.user'],
+      });
+    });
+
+    it('should throw NotFoundException when room not found', async () => {
+      repository.findOne.mockResolvedValue(null);
+
+      await expect(service.getCompanies('non-existent-id')).rejects.toThrow(
+        new NotFoundException('Sala com ID "non-existent-id" não encontrada'),
+      );
+    });
+
+    it('should return empty array for room with no companies', async () => {
+      const roomWithNoCompanies = { ...mockRoom, companies: [] };
+      repository.findOne.mockResolvedValue(roomWithNoCompanies);
+
+      const result = await service.getCompanies(mockRoom.id);
+
+      expect(result).toEqual([]);
     });
   });
 });

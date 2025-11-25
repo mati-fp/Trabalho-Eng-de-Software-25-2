@@ -306,10 +306,11 @@ describe('CompaniesService', () => {
 
       await service.remove(mockCompany.id);
 
+      // Verifica que busca IPs da EMPRESA (não da sala) - correção para múltiplas empresas por sala
       expect(mockEntityManager.find).toHaveBeenCalledWith(Ip, {
         select: ['id'],
         where: {
-          room: { id: mockRoom.id },
+          company: { id: mockCompany.id },
           status: IpStatus.IN_USE,
         },
       });
@@ -319,7 +320,12 @@ describe('CompaniesService', () => {
         { id: expect.anything() },
         {
           status: IpStatus.AVAILABLE,
+          company: undefined,
           macAddress: undefined,
+          userName: undefined,
+          assignedAt: undefined,
+          expiresAt: undefined,
+          isTemporary: false,
         },
       );
     });

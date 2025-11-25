@@ -53,20 +53,29 @@ services:
     build:
       context: ../cipcei-frontend-app
       dockerfile: Dockerfile
+      target: deps # Usa o stage deps que tem as dependências instaladas para desenvolvimento
     container_name: frontend-cipcei
     restart: always
     ports:
       - "3001:3001"
+    volumes:
+      # Volume bind para hot-reload - mapeia código local para o container
+      - ../cipcei-frontend-app:/app
+      - /app/node_modules # Evita sobrescrever node_modules do container
+      - /app/.next # Evita sobrescrever .next do container
     environment:
       # URL da API backend (acessível do navegador do usuário)
       NEXT_PUBLIC_API_URL: http://localhost:3000
       # Ambiente
-      NODE_ENV: production # change to development for hot reload
+      NODE_ENV: development # development para hot reload
       PORT: 3001
+    command: pnpm dev # Usa o script dev para hot reload
     depends_on:
       - app
     networks:
       - cipcei-network
+    stdin_open: true
+    tty: true
 
 volumes:
   postgres_data:

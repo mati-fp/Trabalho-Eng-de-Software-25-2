@@ -1,7 +1,8 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { Roles } from './decorators/roles.decorator';
 import { Public } from './decorators/public.decorator';
 import { UserRole } from '../users/entities/user.entity';
@@ -51,24 +52,21 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Renovar access token',
-    description: 'Renova o access token usando um refresh token válido'
-  })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        refresh_token: { type: 'string' }
-      }
-    }
+    description: 'Renova o access token usando um refresh token valido'
   })
   @ApiResponse({ status: 200, description: 'Token renovado com sucesso' })
   @ApiResponse({
+    status: 400,
+    description: 'Dados de entrada invalidos',
+    type: BadRequestErrorDto
+  })
+  @ApiResponse({
     status: 401,
-    description: 'Refresh token inválido ou expirado',
+    description: 'Refresh token invalido ou expirado',
     type: UnauthorizedErrorDto
   })
-  async refresh(@Body('refresh_token') refreshToken: string) {
-    return this.authService.refreshToken(refreshToken);
+  async refresh(@Body() refreshTokenDto: RefreshTokenDto) {
+    return this.authService.refreshToken(refreshTokenDto.refresh_token);
   }
 
   /**
@@ -92,7 +90,7 @@ export class AuthController {
     description: 'Sem permissão (não é Admin)',
     type: ForbiddenErrorDto
   })
-  async testGuard(): Promise<String>{
-    return "TESTEI O GUARD - SOMENTE ADMIN";
+  async testGuard(): Promise<string> {
+    return 'TESTEI O GUARD - SOMENTE ADMIN';
   }
 }

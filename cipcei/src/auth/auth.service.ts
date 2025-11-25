@@ -28,12 +28,8 @@ export class AuthService {
     // Validar credenciais
     const user = await this.validateUser(loginDto.email, loginDto.password);
 
-    if (!user) {
-      throw new UnauthorizedException('Email ou senha inválidos');
-    }
-
-    if (!user.isActive) {
-      throw new UnauthorizedException('Usuário inativo');
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Email ou senha invalidos');
     }
 
     // Gerar tokens JWT

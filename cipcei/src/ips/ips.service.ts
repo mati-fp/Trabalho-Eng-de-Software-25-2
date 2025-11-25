@@ -64,7 +64,7 @@ export class IpsService {
   async bulkCreate(roomId: string, createIpDtos: CreateIpDto[]): Promise<Ip[]> {
     const room = await this.roomRepository.findOneBy({ id: roomId });
     if (!room) {
-      throw new NotFoundException(`Room with ID "${roomId}" not found`);
+      throw new NotFoundException(`Sala com ID "${roomId}" nao encontrada`);
     }
 
     const ipsToSave = createIpDtos.map((dto) =>
@@ -86,12 +86,12 @@ export class IpsService {
       relations: ['room'],
     });
     if (!ip) {
-      throw new NotFoundException(`IP with ID "${ipId}" not found`);
+      throw new NotFoundException(`IP com ID "${ipId}" nao encontrado`);
     }
 
-    // 2. Verifica se o IP está disponível
+    // 2. Verifica se o IP esta disponivel
     if (ip.status === IpStatus.IN_USE) {
-      throw new ConflictException(`IP address ${ip.address} is already in use`);
+      throw new ConflictException(`Endereco IP ${ip.address} ja esta em uso`);
     }
 
     // 3. Encontra a empresa e sua sala
@@ -100,17 +100,19 @@ export class IpsService {
       relations: ['room'],
     });
     if (!company) {
-      throw new NotFoundException(`Company with ID "${companyId}" not found`);
+      throw new NotFoundException(`Empresa com ID "${companyId}" nao encontrada`);
     }
 
-    // 4. Valida se a sala do IP e da empresa são a mesma
+    // 4. Valida se a sala do IP e da empresa sao a mesma
     if (!ip.room || !company.room || ip.room.id !== company.room.id) {
-      throw new BadRequestException('IP address does not belong to the company\'s room');
+      throw new BadRequestException('Endereco IP nao pertence a sala da empresa');
     }
 
     // 5. Atualiza e salva o IP
     ip.status = IpStatus.IN_USE;
     ip.macAddress = macAddress;
+    ip.company = company;
+    ip.assignedAt = new Date();
 
     return this.ipRepository.save(ip);
   }
@@ -118,15 +120,20 @@ export class IpsService {
   async unassign(ipId: string): Promise<Ip> {
     const ip = await this.ipRepository.findOneBy({ id: ipId });
     if (!ip) {
-      throw new NotFoundException(`IP with ID "${ipId}" not found`);
+      throw new NotFoundException(`IP com ID "${ipId}" nao encontrado`);
     }
-    
+
     if (ip.status === IpStatus.AVAILABLE) {
-      throw new ConflictException(`IP address ${ip.address} is already available`);
+      throw new ConflictException(`Endereco IP ${ip.address} ja esta disponivel`);
     }
+
     ip.status = IpStatus.AVAILABLE;
-    ip.macAddress = '';
-    
+    ip.macAddress = undefined as any;
+    ip.company = undefined as any;
+    ip.assignedAt = undefined as any;
+    ip.expiresAt = undefined as any;
+    ip.isTemporary = false;
+
     return this.ipRepository.save(ip);
   }
 }

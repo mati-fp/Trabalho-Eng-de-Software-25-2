@@ -85,7 +85,7 @@ export class CompaniesService {
       ...updateCompanyDto,
     });
     if (!company) {
-      throw new NotFoundException(`Company with ID "${id}" not found`);
+      throw new NotFoundException(`Empresa com ID "${id}" nao encontrada`);
     }
     return this.companyRepository.save(company);
   }

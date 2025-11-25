@@ -272,7 +272,7 @@ describe('CompaniesService', () => {
       companyRepository.preload.mockResolvedValue(undefined);
 
       await expect(service.update('non-existent-id', updateDto)).rejects.toThrow(
-        new NotFoundException('Company with ID "non-existent-id" not found'),
+        new NotFoundException('Empresa com ID "non-existent-id" nao encontrada'),
       );
     });
   });

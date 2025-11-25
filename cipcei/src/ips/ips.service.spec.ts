@@ -140,7 +140,7 @@ describe('IpsService', () => {
       roomRepository.findOneBy.mockResolvedValue(null);
 
       await expect(service.bulkCreate('invalid-id', createIpDtos)).rejects.toThrow(
-        new NotFoundException('Room with ID "invalid-id" not found'),
+        new NotFoundException('Sala com ID "invalid-id" nao encontrada'),
       );
     });
   });
@@ -167,7 +167,7 @@ describe('IpsService', () => {
       ipRepository.findOne.mockResolvedValue(null);
 
       await expect(service.assign('invalid-id', assignIpDto)).rejects.toThrow(
-        new NotFoundException('IP with ID "invalid-id" not found'),
+        new NotFoundException('IP com ID "invalid-id" nao encontrado'),
       );
     });
 
@@ -176,7 +176,7 @@ describe('IpsService', () => {
       ipRepository.findOne.mockResolvedValue(ipInUse as any);
 
       await expect(service.assign(mockIp.id, assignIpDto)).rejects.toThrow(
-        new ConflictException(`IP address ${mockIp.address} is already in use`),
+        new ConflictException(`Endereco IP ${mockIp.address} ja esta em uso`),
       );
     });
 
@@ -185,7 +185,7 @@ describe('IpsService', () => {
       companyRepository.findOne.mockResolvedValue(null);
 
       await expect(service.assign(mockIp.id, assignIpDto)).rejects.toThrow(
-        new NotFoundException(`Company with ID "${assignIpDto.companyId}" not found`),
+        new NotFoundException(`Empresa com ID "${assignIpDto.companyId}" nao encontrada`),
       );
     });
 
@@ -195,7 +195,7 @@ describe('IpsService', () => {
       companyRepository.findOne.mockResolvedValue({ ...mockCompany, room: differentRoom } as any);
 
       await expect(service.assign(mockIp.id, assignIpDto)).rejects.toThrow(
-        new BadRequestException('IP address does not belong to the company\'s room'),
+        new BadRequestException('Endereco IP nao pertence a sala da empresa'),
       );
     });
   });
@@ -204,19 +204,19 @@ describe('IpsService', () => {
     it('should successfully unassign IP', async () => {
       const ipInUse = { ...mockIp, status: IpStatus.IN_USE, macAddress: 'AA:BB:CC:DD:EE:FF' };
       ipRepository.findOneBy.mockResolvedValue(ipInUse as any);
-      ipRepository.save.mockResolvedValue({ ...ipInUse, status: IpStatus.AVAILABLE, macAddress: '' } as any);
+      ipRepository.save.mockResolvedValue({ ...ipInUse, status: IpStatus.AVAILABLE, macAddress: undefined } as any);
 
       const result = await service.unassign(mockIp.id);
 
       expect(result.status).toBe(IpStatus.AVAILABLE);
-      expect(result.macAddress).toBe('');
+      expect(result.macAddress).toBeUndefined();
     });
 
     it('should throw NotFoundException when IP does not exist', async () => {
       ipRepository.findOneBy.mockResolvedValue(null);
 
       await expect(service.unassign('invalid-id')).rejects.toThrow(
-        new NotFoundException('IP with ID "invalid-id" not found'),
+        new NotFoundException('IP com ID "invalid-id" nao encontrado'),
       );
     });
 
@@ -224,7 +224,7 @@ describe('IpsService', () => {
       ipRepository.findOneBy.mockResolvedValue(mockIp as any);
 
       await expect(service.unassign(mockIp.id)).rejects.toThrow(
-        new ConflictException(`IP address ${mockIp.address} is already available`),
+        new ConflictException(`Endereco IP ${mockIp.address} ja esta disponivel`),
       );
     });
   });

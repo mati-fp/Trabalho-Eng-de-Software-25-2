@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks";
 import IpActionsMenu from "./components/IpActionsMenu";
+import { CompaniesAPI } from "@/infra/companies";
 
 type SortField = "address" | "status";
 type SortOrder = "asc" | "desc";
@@ -59,7 +60,7 @@ export default function IpsPage() {
           params.status = statusFilter as "available" | "in_use";
         }
         //params.companyId = profile?.companyId;
-        const data = await IpsAPI.findAllIps(params);
+        const data = await CompaniesAPI.getMyIps({});
         setIps(data);
         setFilteredIps(data);
       } catch (err) {

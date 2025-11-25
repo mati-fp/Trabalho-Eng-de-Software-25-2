@@ -3,13 +3,17 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagg
 import { AssignIpDto } from './dto/assign-ip.dto';
 import { IpsService } from './ips.service';
 import { FindAllIpsDto } from './dto/find-all-ips.dto';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { UserRole } from 'src/users/entities/user.entity';
 
 @ApiTags('ips')
 @ApiBearerAuth('JWT-auth')
+@Roles([UserRole.ADMIN])
 @Controller('ips')
 export class IpsController {
   constructor(private readonly ipsService: IpsService) {}
 
+  
   @Patch(':id/assign')
   @ApiOperation({
     summary: 'Atribuir IP a uma empresa',
@@ -23,6 +27,7 @@ export class IpsController {
     return this.ipsService.assign(id, assignIpDto);
   }
 
+
   @Get()
   @ApiOperation({
     summary: 'Listar IPs com filtros',
@@ -34,6 +39,7 @@ export class IpsController {
     return this.ipsService.findAll(findAllIpsDto);
   }
 
+  
   @Patch(':id/unassign')
   @ApiOperation({
     summary: 'Desatribuir IP de uma empresa',

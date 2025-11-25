@@ -4,9 +4,12 @@ import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { IpsService } from 'src/ips/ips.service';
 import { BulkCreateIpDto } from 'src/ips/dto/bulk-create-ip.dto';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { UserRole } from 'src/users/entities/user.entity';
 
 @ApiTags('rooms')
 @ApiBearerAuth('JWT-auth')
+@Roles([UserRole.ADMIN])
 @Controller('rooms')
 export class RoomsController {
   constructor(

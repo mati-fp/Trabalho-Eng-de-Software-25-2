@@ -2,12 +2,24 @@ import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Roles } from '../decorators/roles.decorator';
 import { UserRole } from 'src/users/entities/user.entity';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    // Verificar se a rota é pública
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    // Se a rota é pública, permite o acesso
+    if (isPublic) {
+      return true;
+    }
+
     // Usar getAllAndOverride para metadata de método E classe
     // Se o método tiver @Roles, usa apenas o do método
     // Se não, usa o da classe (se houver)
@@ -22,6 +34,11 @@ export class RolesGuard implements CanActivate {
     }
 
     const { user } = context.switchToHttp().getRequest();
+
+    // Se não há usuário autenticado, nega o acesso
+    if (!user) {
+      return false;
+    }
 
     // Admin tem acesso a tudo
     if (user.role === UserRole.ADMIN) {

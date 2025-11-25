@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { CompaniesModule } from './companies/companies.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { IpsModule } from './ips/ips.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
-import { ConfigModule } from '@nestjs/config';
+import { IpRequestsModule } from './ip-requests/ip-requests.module';
+import { IpHistoryModule } from './ip-history/ip-history.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
@@ -16,27 +16,31 @@ import { RolesGuard } from './auth/guards/roles.guard';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: './/.env',
+      envFilePath: '.env',
     }),
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'postgres',
-      port: 5432,
-      username: 'user',
-      password: 'password',
-      database: 'cipcei_db',
-      entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true, // Não em produção
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get<string>('DATABASE_HOST'),
+        port: configService.get<number>('DATABASE_PORT'),
+        username: configService.get<string>('DATABASE_USER'),
+        password: configService.get<string>('DATABASE_PASSWORD'),
+        database: configService.get<string>('DATABASE_NAME'),
+        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        synchronize: configService.get<boolean>('TYPEORM_SYNCHRONIZE'),
+      }),
+      inject: [ConfigService],
     }),
-    CompaniesModule,
-    IpsModule,
-    RoomsModule,
-    UsersModule,
     AuthModule,
+    UsersModule,
+    CompaniesModule,
+    RoomsModule,
+    IpsModule,
+    IpRequestsModule,
+    IpHistoryModule,
   ],
-  controllers: [AppController],
   providers: [
-    AppService,
     // JwtAuthGuard executa PRIMEIRO
     {
       provide: APP_GUARD,

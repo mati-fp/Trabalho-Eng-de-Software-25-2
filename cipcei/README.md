@@ -20,8 +20,9 @@
 git clone [seu-repositorio]
 cd [seu-projeto]/[cipcei]
 
-# Copie o arquivo de exemplo de variáveis de ambiente 
-cp .env.example .env # PARA USARMOS NO FUTURO
+# Copie o arquivo de exemplo de variáveis de ambiente
+cp .env.example .env
+# Edite o .env com suas configurações se necessário
 
 # Construa e inicie os containers
 docker-compose up --build

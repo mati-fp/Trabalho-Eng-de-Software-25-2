@@ -86,7 +86,7 @@ export class CompaniesService {
     // 1. Iniciar a transação para garantir a consistência de todas as operações
     await this.dataSource.transaction(async (transactionalEntityManager) => {
       // 2. Encontrar a empresa e carregar suas relações ('user' e 'room')
-      const company = await transactionalEntityManager.findOne(Company, { 
+      const company = await transactionalEntityManager.findOne(Company, {
         where: { id },
         relations: ['user', 'room'], // Carregar a sala é crucial para a nova lógica
       });
@@ -95,41 +95,44 @@ export class CompaniesService {
         throw new NotFoundException(`Empresa com ID "${id}" não encontrada`);
       }
 
-      // 3. Fazer o soft delete da empresa
+      // 3. Liberar IPs ANTES do soft delete da empresa
+      // IMPORTANTE: A liberação deve ocorrer antes do softRemove porque o TypeORM
+      // aplica filtro global de soft-delete nas queries. Após softRemove, a relação
+      // company: { id } no find() não encontraria a empresa (já "deletada"),
+      // fazendo com que os IPs não fossem liberados.
+      const ipsToRelease = await transactionalEntityManager.find(Ip, {
+        select: ['id'],
+        where: {
+          company: { id: company.id }, // Filtra por empresa, não por sala
+          status: IpStatus.IN_USE,
+        },
+      });
+
+      if (ipsToRelease.length > 0) {
+        const ipIdsToRelease = ipsToRelease.map(ip => ip.id);
+
+        await transactionalEntityManager.update(Ip,
+          { id: In(ipIdsToRelease) },
+          {
+            status: IpStatus.AVAILABLE,
+            company: undefined as any, // Remove associação com a empresa
+            macAddress: undefined,
+            userName: undefined,
+            assignedAt: undefined,
+            expiresAt: undefined,
+            isTemporary: false,
+          }
+        );
+      }
+
+      // 4. Fazer o soft delete da empresa (após liberar IPs)
       await transactionalEntityManager.softRemove(company);
 
-      // 4. Desativar o usuário associado
+      // 5. Desativar o usuário associado
       if (company.user) {
         await transactionalEntityManager.update(User, company.user.id, { isActive: false });
       }
-
-      // 5. NOVA LÓGICA: Liberar os IPs associados à sala da empresa
-      if (company.room) {
-        // Encontra todos os IDs de IPs que estão 'in_use' na sala da empresa
-        const ipsToRelease = await transactionalEntityManager.find(Ip, {
-          select: ['id'], // Selecionamos apenas o ID para eficiência
-          where: {
-            room: { id: company.room.id },
-            status: IpStatus.IN_USE,
-          },
-        });
-
-        // Se encontrarmos algum IP para liberar...
-        if (ipsToRelease.length > 0) {
-          const ipIdsToRelease = ipsToRelease.map(ip => ip.id);
-          
-          // ... atualizamos todos eles de uma só vez
-          await transactionalEntityManager.update(Ip, 
-            { id: In(ipIdsToRelease) }, // Usamos o operador 'In' para atualizar múltiplos IPs
-            {
-              status: IpStatus.AVAILABLE,
-              macAddress: undefined, // Limpa o MAC Address
-            }
-          );
-        }
-      }
-      // A relação da empresa com a sala é "desvinculada" implicitamente pelo soft delete.
-      // A sala agora fica livre para ser associada a uma nova empresa.
+      // A empresa é removida mas a sala permanece disponível para outras empresas
     });
   }
 

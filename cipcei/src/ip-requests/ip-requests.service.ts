@@ -123,7 +123,7 @@ export class IpRequestsService {
     try {
       const request = await this.ipRequestRepository.findOne({
         where: { id: requestId },
-        relations: ['company', 'company.room', 'ip', 'requestedBy'],
+        relations: ['company', 'ip', 'requestedBy'],
       });
 
       if (!request) {
@@ -133,6 +133,20 @@ export class IpRequestsService {
       if (request.status !== IpRequestStatus.PENDING) {
         throw new BadRequestException('Solicitação já foi processada');
       }
+
+      // Buscar a company com a relacao room explicitamente
+      // (necessario porque o eager loading da company nao carrega relacoes aninhadas)
+      const companyWithRoom = await this.companyRepository.findOne({
+        where: { id: request.company.id },
+        relations: ['room'],
+      });
+
+      if (!companyWithRoom || !companyWithRoom.room) {
+        throw new BadRequestException('Empresa não possui sala associada');
+      }
+
+      // Atualizar a company do request com a versao que tem room
+      request.company = companyWithRoom;
 
       let ip: Ip;
 

@@ -6,6 +6,10 @@ export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000",
 });
 
+export const refreshApi = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000",
+});
+
 // Flag to prevent multiple simultaneous refresh attempts
 let isRefreshing = false;
 let failedQueue: Array<{
@@ -44,6 +48,7 @@ api.interceptors.request.use(
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => {
+    console.log({ response })
     return response;
   },
   async (error: AxiosError) => {
@@ -85,34 +90,35 @@ api.interceptors.response.use(
 
         try {
           // Try to refresh the token
-          const response = await AuthAPI.refreshToken({ refresh_token: refreshToken });
-          
+          const response = await refreshApi.post("/auth/refresh", { refresh_token: refreshToken });
           // Update tokens
-          localStorage.setItem("auth_token", response.access_token);
-          if (response.refresh_token) {
-            localStorage.setItem("refresh_token", response.refresh_token);
+          localStorage.setItem("auth_token", response.data.access_token);
+          if (response.data.refresh_token) {
+            localStorage.setItem("refresh_token", response.data.refresh_token);
           }
 
           // Update the original request with new token
           if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${response.access_token}`;
+            originalRequest.headers.Authorization = `Bearer ${response.data.access_token}`;
           }
 
           isRefreshing = false;
-          processQueue(null, response.access_token);
+          processQueue(null, response.data.access_token);
 
           // Retry the original request
           return api(originalRequest);
         } catch (refreshError) {
-          // Refresh failed, clear tokens and redirect to login
-          const axiosError = refreshError as AxiosError;
-          if (axiosError.response?.status === 401 || !axiosError.response) {
-            localStorage.removeItem("auth_token");
-            localStorage.removeItem("refresh_token");
-            isRefreshing = false;
-            processQueue(axiosError, null);
+          // Refresh failed - clear tokens and redirect to login for ANY error
+          localStorage.removeItem("auth_token");
+          localStorage.removeItem("refresh_token");
+          isRefreshing = false;
+          processQueue(refreshError as AxiosError, null);
+
+          // Redirect to login
+          if (typeof window !== "undefined") {
             window.location.href = "/login";
           }
+
           return Promise.reject(refreshError);
         }
       }

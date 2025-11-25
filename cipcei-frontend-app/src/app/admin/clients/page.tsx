@@ -200,7 +200,7 @@ export default function AdminClientsPage() {
   ) => {
     try {
       setModalLoading(true);
-      
+
       if (editingCompany) {
         // Update company
         await CompaniesAPI.updateCompany(editingCompany.id, data as UpdateCompanyPayload);
@@ -212,7 +212,7 @@ export default function AdminClientsPage() {
       // Refresh companies list
       const updatedCompanies = await CompaniesAPI.findAllCompanies();
       setCompanies(updatedCompanies);
-      
+
       // Close modal
       handleModalClose();
     } catch (err) {
@@ -249,7 +249,7 @@ export default function AdminClientsPage() {
         <h2 className="text-lg font-semibold mb-4 text-card-foreground">
           Filtros
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex flex-row items-end gap-4">
           {/* Name Filter */}
           <div>
             <label className="block text-sm font-medium mb-2 text-muted-foreground">
@@ -259,6 +259,7 @@ export default function AdminClientsPage() {
               placeholder="Nome da empresa"
               value={nameFilter}
               onChange={(e) => setNameFilter(e.target.value)}
+              className="w-full"
             />
           </div>
 
@@ -272,15 +273,16 @@ export default function AdminClientsPage() {
               placeholder="Ex: 101"
               value={roomFilter}
               onChange={(e) => setRoomFilter(e.target.value)}
+              className="w-full"
             />
+          </div>
+          <div className="mt-4">
+            <Button variant="default" onClick={handleClearFilters}>
+              Limpar Filtros
+            </Button>
           </div>
         </div>
 
-        <div className="mt-4">
-          <Button variant="default" onClick={handleClearFilters}>
-            Limpar Filtros
-          </Button>
-        </div>
       </div>
 
       {/* Table Section */}

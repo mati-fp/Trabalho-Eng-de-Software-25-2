@@ -65,9 +65,12 @@ export default function AdminHomePage() {
         <p className="text-muted-foreground">
           Visão geral do sistema de gerenciamento de IPs
         </p>
+        <p className="text-muted-foreground">
+         Métricas estão hardcoded, só adicionar se tiver tempo
+        </p>
       </div>
 
-      {/* Metrics Grid */}
+      Metrics Grid
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
         {metrics.map((metric, index) => (
           <MetricCard
@@ -78,6 +81,8 @@ export default function AdminHomePage() {
           />
         ))}
       </div>
+
+
 
     </div>
   );

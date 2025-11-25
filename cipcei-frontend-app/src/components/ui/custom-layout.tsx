@@ -13,7 +13,8 @@ import {
   Menu,
   X,
   User,
-  Shield
+  Shield,
+  ListChecks
 } from "lucide-react";
 import { getAuthToken, removeAuthToken } from "@/lib/api";
 import { decodeJWT } from "@/lib/jwt";
@@ -27,9 +28,10 @@ interface MenuItem {
 }
 
 const menuItemsAdmin: MenuItem[] = [
-  { label: "Home", icon: <LayoutDashboard className="w-5 h-5" />, href: "/admin/home" },
-  { label: "Solicitações", icon: <Ticket className="w-5 h-5" />, href: "/admin/requests" },
   { label: "Tabela de IPs", icon: <Database className="w-5 h-5" />, href: "/admin/ips" },
+  { label: "Histórico", icon: <FileText className="w-5 h-5" />, href: "/admin/activities" },
+  // { label: "Home", icon: <LayoutDashboard className="w-5 h-5" />, href: "/admin/home" },
+  { label: "Solicitações", icon: <Ticket className="w-5 h-5" />, href: "/admin/requests" },
   { label: "Clientes", icon: <Users className="w-5 h-5" />, href: "/admin/clients" },
 ];
 

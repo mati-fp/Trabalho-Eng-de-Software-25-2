@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import IpActionsButton from "./components/IpActionsButton";
 
 type SortField = "address" | "status";
 type SortOrder = "asc" | "desc";
@@ -129,6 +130,31 @@ export default function AdminIpsPage() {
     } else {
       setSortField(field);
       setSortOrder("asc");
+    }
+  };
+
+  // Refresh IPs list after action
+  const handleRefreshIps = async () => {
+    try {
+      const params: FindAllIpsParams = {};
+
+      if (statusFilter !== "all") {
+        params.status = statusFilter as "available" | "in_use";
+      }
+
+      if (companyNameFilter.trim()) {
+        params.companyName = companyNameFilter.trim();
+      }
+
+      if (roomNumberFilter.trim()) {
+        params.roomNumber = parseInt(roomNumberFilter.trim());
+      }
+
+      const data = await IpsAPI.findAllIps(params);
+      setIps(data);
+      setFilteredIps(data);
+    } catch (err) {
+      console.error("Error refreshing IPs:", err);
     }
   };
 
@@ -269,6 +295,7 @@ export default function AdminIpsPage() {
                   <TableHead className="text-center">Endereço MAC</TableHead>
                   <TableHead className="text-center">Sala</TableHead>
                   <TableHead className="text-center">Empresa</TableHead>
+                  <TableHead className="text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -290,6 +317,12 @@ export default function AdminIpsPage() {
                       {ip.room?.company?.user?.name || (
                         <span className="text-muted-foreground">-</span>
                       )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <IpActionsButton
+                        ip={ip}
+                        onActionComplete={handleRefreshIps}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

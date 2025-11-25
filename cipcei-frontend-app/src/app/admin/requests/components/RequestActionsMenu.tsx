@@ -200,7 +200,7 @@ export default function RequestActionsMenu({
           cancelLabel="Cancelar"
           variant="default"
         >
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2 items-start">
             <label className="text-sm font-medium text-foreground">
               Notas adicionais
             </label>
@@ -237,7 +237,7 @@ export default function RequestActionsMenu({
           variant="destructive"
           confirmDisabled={!inputValue.trim()}
         >
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2 items-start">
             <label className="text-sm font-medium text-foreground">
               Motivo da rejeição
               <span className="text-destructive ml-1">*</span>

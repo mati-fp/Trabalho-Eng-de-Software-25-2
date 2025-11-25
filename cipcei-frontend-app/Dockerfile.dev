@@ -1,15 +1,20 @@
-FROM node:20-alpine
+FROM node:20-alpine AS base
 
+# Instalar pnpm
+RUN npm install -g pnpm
+
+# Stage de desenvolvimento
+FROM base AS development
 WORKDIR /app
 
 # Copiar arquivos de dependências
-COPY package*.json ./
+COPY package.json pnpm-lock.yaml ./
 
 # Instalar dependências
-RUN npm ci
+RUN pnpm install
 
 # Expor porta
 EXPOSE 3001
 
-# Comando para desenvolvimento
-CMD ["npm", "run", "dev"]
+# Comando padrão (será sobrescrito pelo docker-compose)
+CMD ["pnpm", "dev"]

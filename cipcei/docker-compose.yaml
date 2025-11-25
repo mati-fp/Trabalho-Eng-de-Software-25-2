@@ -52,8 +52,8 @@ services:
   frontend:
     build:
       context: ../cipcei-frontend-app
-      dockerfile: Dockerfile
-      target: deps # Usa o stage deps que tem as dependências instaladas para desenvolvimento
+      dockerfile: Dockerfile.dev
+      target: development # Usa o stage de desenvolvimento
     container_name: frontend-cipcei
     restart: always
     ports:
@@ -69,6 +69,9 @@ services:
       # Ambiente
       NODE_ENV: development # development para hot reload
       PORT: 3001
+      # Configurações para hot reload no Docker
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
     command: pnpm dev # Usa o script dev para hot reload
     depends_on:
       - app

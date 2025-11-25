@@ -12,7 +12,7 @@ export default function Home() {
 
   useEffect(() => {
     if (profile?.role === "admin") {
-      router.push("/admin/activities");
+      router.push("/admin/ips");
     } else {
       router.push("/company/ips");
     }

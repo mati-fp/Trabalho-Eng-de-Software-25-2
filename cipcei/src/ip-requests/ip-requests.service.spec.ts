@@ -266,6 +266,7 @@ describe('IpRequestsService', () => {
     it('should approve NEW IP request and assign available IP', async () => {
       const request = { ...mockRequest, company: { ...mockCompany, room: mockRoom } };
       ipRequestRepository.findOne.mockResolvedValue(request as any);
+      companyRepository.findOne.mockResolvedValue({ ...mockCompany, room: mockRoom } as any);
       ipRepository.findOne.mockResolvedValue(mockIp as any);
       mockManagerSave.mockResolvedValue({} as any);
 
@@ -306,6 +307,7 @@ describe('IpRequestsService', () => {
         expirationDate: new Date(),
       };
       ipRequestRepository.findOne.mockResolvedValue(renewalRequest as any);
+      companyRepository.findOne.mockResolvedValue({ ...mockCompany, room: mockRoom } as any);
       mockManagerSave.mockResolvedValue({} as any);
 
       await service.approve(mockRequest.id, approveDto, mockAdmin as any);
@@ -322,6 +324,7 @@ describe('IpRequestsService', () => {
         company: { ...mockCompany, room: mockRoom },
       };
       ipRequestRepository.findOne.mockResolvedValue(cancellationRequest as any);
+      companyRepository.findOne.mockResolvedValue({ ...mockCompany, room: mockRoom } as any);
       mockManagerSave.mockResolvedValue({} as any);
 
       await service.approve(mockRequest.id, approveDto, mockAdmin as any);

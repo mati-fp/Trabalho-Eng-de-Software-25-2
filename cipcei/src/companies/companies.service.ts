@@ -22,8 +22,16 @@ export class CompaniesService {
   private dataSource: DataSource,
   ) {}
 
-  async findAll(): Promise<Company[]> {
-    return this.companyRepository.find();
+  async findAll() {
+    const companies = await this.companyRepository.find({
+      relations: ['room'],
+    });
+
+    // Retorna as empresas com roomNumber (apenas o número, sem o objeto room)
+    return companies.map(({ room, ...company }) => ({
+      ...company,
+      roomNumber: room?.number ?? null,
+    }));
   }
 
   async create(createCompanyDto: CreateCompanyDto): Promise<Company> {

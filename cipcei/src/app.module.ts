@@ -7,7 +7,6 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { IpRequestsModule } from './ip-requests/ip-requests.module';
 import { IpHistoryModule } from './ip-history/ip-history.module';
-import { HelpModule } from './help/help.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
@@ -40,7 +39,6 @@ import { RolesGuard } from './auth/guards/roles.guard';
     IpsModule,
     IpRequestsModule,
     IpHistoryModule,
-    HelpModule,
   ],
   providers: [
     // JwtAuthGuard executa PRIMEIRO

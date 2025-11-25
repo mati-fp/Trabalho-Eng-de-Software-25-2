@@ -59,9 +59,13 @@ describe('IpRequestsService', () => {
     justification: 'Test request',
   };
 
+  let mockManagerSave: jest.Mock;
+
   beforeEach(async () => {
+    mockManagerSave = jest.fn();
+
     const mockManager = {
-      save: jest.fn(),
+      save: mockManagerSave,
       findOne: jest.fn(),
     };
 
@@ -209,6 +213,49 @@ describe('IpRequestsService', () => {
         new UnauthorizedException('Este IP não pertence à sua empresa'),
       );
     });
+
+    it('should throw BadRequestException for CANCELLATION without ipId', async () => {
+      const cancellationDto = {
+        ...createDto,
+        requestType: IpRequestType.CANCELLATION,
+      };
+      companyRepository.findOne.mockResolvedValue(mockCompany as any);
+
+      await expect(service.create(cancellationDto, mockUser as any)).rejects.toThrow(
+        new BadRequestException('ID do IP é obrigatório para renovação ou cancelamento'),
+      );
+    });
+
+    it('should throw NotFoundException when IP not found for RENEWAL', async () => {
+      const renewalDto = {
+        ...createDto,
+        requestType: IpRequestType.RENEWAL,
+        ipId: 'non-existent-ip',
+      };
+      companyRepository.findOne.mockResolvedValue(mockCompany as any);
+      ipRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.create(renewalDto, mockUser as any)).rejects.toThrow(
+        new NotFoundException('IP não encontrado'),
+      );
+    });
+
+    it('should create CANCELLATION request with valid IP', async () => {
+      const cancellationDto = {
+        ...createDto,
+        requestType: IpRequestType.CANCELLATION,
+        ipId: mockIp.id,
+      };
+      companyRepository.findOne.mockResolvedValue(mockCompany as any);
+      ipRepository.findOne.mockResolvedValue({ ...mockIp, company: mockCompany } as any);
+      ipRequestRepository.create.mockReturnValue({ ...mockRequest, requestType: IpRequestType.CANCELLATION } as any);
+      ipRequestRepository.save.mockResolvedValue({ ...mockRequest, requestType: IpRequestType.CANCELLATION } as any);
+
+      const result = await service.create(cancellationDto, mockUser as any);
+
+      expect(result.requestType).toBe(IpRequestType.CANCELLATION);
+      expect(ipHistoryService.create).toHaveBeenCalled();
+    });
   });
 
   describe('approve', () => {
@@ -218,12 +265,11 @@ describe('IpRequestsService', () => {
 
     it('should approve NEW IP request and assign available IP', async () => {
       const request = { ...mockRequest, company: { ...mockCompany, room: mockRoom } };
-      mockQueryRunner.manager.findOne = jest.fn();
       ipRequestRepository.findOne.mockResolvedValue(request as any);
       ipRepository.findOne.mockResolvedValue(mockIp as any);
-      mockQueryRunner.manager.save.mockResolvedValue({} as any);
+      mockManagerSave.mockResolvedValue({} as any);
 
-      const result = await service.approve(mockRequest.id, approveDto, mockAdmin as any);
+      await service.approve(mockRequest.id, approveDto, mockAdmin as any);
 
       expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
@@ -260,7 +306,7 @@ describe('IpRequestsService', () => {
         expirationDate: new Date(),
       };
       ipRequestRepository.findOne.mockResolvedValue(renewalRequest as any);
-      mockQueryRunner.manager.save.mockResolvedValue({} as any);
+      mockManagerSave.mockResolvedValue({} as any);
 
       await service.approve(mockRequest.id, approveDto, mockAdmin as any);
 
@@ -276,7 +322,7 @@ describe('IpRequestsService', () => {
         company: { ...mockCompany, room: mockRoom },
       };
       ipRequestRepository.findOne.mockResolvedValue(cancellationRequest as any);
-      mockQueryRunner.manager.save.mockResolvedValue({} as any);
+      mockManagerSave.mockResolvedValue({} as any);
 
       await service.approve(mockRequest.id, approveDto, mockAdmin as any);
 

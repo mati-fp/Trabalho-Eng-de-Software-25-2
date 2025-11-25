@@ -40,10 +40,63 @@ export interface Room {
 export interface IP {
   id: string;
   address: string;
-  status: "available" | "in_use";
+  status: "available" | "in_use" | "expired";
   macAddress?: string;
+  userName?: string;
+  isTemporary: boolean;
+  assignedAt?: string;
+  expiresAt?: string;
+  lastRenewedAt?: string;
   room?: Room;
+  company?: Company;
   createdAt: string;
   updatedAt: string;
+}
+
+// IP Request types
+export type IpRequestType = "new" | "renewal" | "cancellation";
+export type IpRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
+
+export interface IpRequest {
+  id: string;
+  company: Company;
+  ip?: IP;
+  requestType: IpRequestType;
+  status: IpRequestStatus;
+  requestedBy: User;
+  approvedBy?: User;
+  requestDate: string;
+  responseDate?: string;
+  expirationDate?: string;
+  justification: string;
+  rejectionReason?: string;
+  macAddress?: string;
+  userName?: string;
+  isTemporary: boolean;
+  updatedAt: string;
+}
+
+// IP History types
+export type IpAction =
+  | "assigned"
+  | "released"
+  | "renewed"
+  | "cancelled"
+  | "expired"
+  | "requested"
+  | "approved"
+  | "rejected";
+
+export interface IpHistory {
+  id: string;
+  ip: IP;
+  company?: Company;
+  action: IpAction;
+  performedBy: User;
+  performedAt: string;
+  macAddress?: string;
+  userName?: string;
+  notes?: string;
+  expirationDate?: string;
 }
 

@@ -12,7 +12,7 @@ const login = async (
 const refreshToken = async (
   payload: RefreshTokenPayload
 ): Promise<AuthResponse> => {
-  const response = await api.post("/auth/refresh", payload);
+  const response = await api.post("/auth/refresh", { refresh_token: payload.refresh_token });
   return response.data;
 };
 

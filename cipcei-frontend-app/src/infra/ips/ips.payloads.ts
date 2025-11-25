@@ -9,7 +9,7 @@ export interface AssignIpPayload {
 }
 
 export interface FindAllIpsParams {
-  status?: "available" | "in_use";
+  status?: "available" | "in_use" | "expired";
   companyName?: string;
   roomNumber?: number;
 }

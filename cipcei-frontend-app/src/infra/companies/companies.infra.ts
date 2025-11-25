@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
 import { CreateCompanyPayload, UpdateCompanyPayload } from "./companies.payloads";
-import { Company } from "@/types";
+import { Company, IP } from "@/types";
 
 const findAllCompanies = async (): Promise<Company[]> => {
   const response = await api.get("/companies");
@@ -31,10 +31,28 @@ const deleteCompany = async (id: string): Promise<void> => {
   await api.delete(`/companies/${id}`);
 };
 
+const getMyCompany = async (): Promise<Company> => {
+  const response = await api.get("/companies/me");
+  return response.data;
+};
+
+const getMyIps = async ({ type }: { type?: "active" | "renewable" }): Promise<IP[]> => {
+  const response = await api.get(`/companies/me/ips${type ? type === "active" ? "/active" : "/renewable" : ""}`);
+  return response.data;
+};
+
+const getCompanyIps = async (id: string): Promise<IP[]> => {
+  const response = await api.get(`/companies/${id}/ips`);
+  return response.data;
+};
+
 export const CompaniesAPI = {
   findAllCompanies,
   createCompany,
   findCompanyById,
   updateCompany,
   deleteCompany,
+  getMyCompany,
+  getMyIps,
+  getCompanyIps,
 };

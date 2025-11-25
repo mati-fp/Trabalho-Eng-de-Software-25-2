@@ -25,7 +25,7 @@ export interface AuthResponse {
 export interface Company {
   id: string;
   user?: User;
-  room?: Room;
+  roomNumber?: number;
   createdAt: string;
   updatedAt: string;
 }

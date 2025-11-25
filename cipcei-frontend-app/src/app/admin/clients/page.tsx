@@ -66,7 +66,7 @@ export default function AdminClientsPage() {
         setCompanies(data);
         setFilteredCompanies(data);
       } catch (err) {
-        setError("Erro ao carregar clientes. Tente novamente.");
+        setError("Erro ao carregar empresas. Tente novamente.");
         console.error("Error fetching companies:", err);
       } finally {
         setLoading(false);
@@ -94,12 +94,12 @@ export default function AdminClientsPage() {
       const roomNumber = parseInt(roomFilter.trim());
       if (!isNaN(roomNumber)) {
         result = result.filter(
-          (company) => company.room?.number === roomNumber
+          (company) => company.roomNumber === roomNumber
         );
       } else {
         // If not a valid number, try partial match on string representation
         result = result.filter((company) =>
-          company.room?.number?.toString().includes(roomFilter.trim())
+          company.roomNumber?.toString().includes(roomFilter.trim())
         );
       }
     }
@@ -117,8 +117,8 @@ export default function AdminClientsPage() {
         const emailB = b.user?.email || "";
         compareValue = emailA.localeCompare(emailB);
       } else if (sortField === "room") {
-        const roomA = a.room?.number || 0;
-        const roomB = b.room?.number || 0;
+        const roomA = a.roomNumber ?? 0;
+        const roomB = b.roomNumber ?? 0;
         compareValue = roomA - roomB;
       } else if (sortField === "createdAt") {
         const dateA = new Date(a.createdAt).getTime();
@@ -261,10 +261,10 @@ export default function AdminClientsPage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-            Gerenciamento de Clientes
+            Gerenciamento de Empresas
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mt-2">
-            Visualize e gerencie os clientes cadastrados no sistema
+            Visualize e gerencie as empresas cadastradas no sistema
           </p>
         </div>
         <Button onClick={handleCreate} className="flex items-center gap-2">
@@ -392,7 +392,7 @@ export default function AdminClientsPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-center">
-                      {company.room?.number || (
+                      {company.roomNumber ?? (
                         <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>

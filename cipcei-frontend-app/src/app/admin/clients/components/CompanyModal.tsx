@@ -17,6 +17,7 @@ import {
   UpdateCompanyPayload,
 } from "@/infra/companies/companies.payloads";
 import { CreateUserPayload } from "@/infra/users/users.payloads";
+import RoomSelect from "@/components/ui/room-select";
 
 interface CompanyModalProps {
   open: boolean;
@@ -49,7 +50,7 @@ export default function CompanyModal({
       if (isEditMode && company) {
         setName(company.user?.name || "");
         setEmail(company.user?.email || "");
-        setRoomId(company.room?.id || "");
+        setRoomId("");
         setPassword("");
         setChangePassword(false);
       } else {
@@ -63,9 +64,6 @@ export default function CompanyModal({
       setErrors({});
     }
   }, [open, company, isEditMode]);
-
-  // UUID validation regex
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
   // Email validation regex
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -102,9 +100,7 @@ export default function CompanyModal({
 
     // RoomId validation
     if (!isEditMode && !roomId.trim()) {
-      newErrors.roomId = "ID da Sala é obrigatório";
-    } else if (roomId.trim() && !uuidRegex.test(roomId.trim())) {
-      newErrors.roomId = "ID da Sala deve ser um UUID válido";
+      newErrors.roomId = "Sala é obrigatória";
     }
 
     setErrors(newErrors);
@@ -321,13 +317,11 @@ export default function CompanyModal({
               >
                 Sala {!isEditMode && <span className="text-destructive">*</span>}
               </label>
-              <Input
-                id="roomId"
-                type="text"
-                placeholder="Ex: 101"
+              <RoomSelect
                 value={roomId}
-                onChange={(e) => setRoomId(e.target.value)}
-                className={errors.roomId ? "border-destructive" : ""}
+                onValueChange={setRoomId}
+                placeholder="Selecione uma sala"
+                disabled={loading}
               />
               {errors.roomId && (
                 <span className="text-sm text-destructive">{errors.roomId}</span>

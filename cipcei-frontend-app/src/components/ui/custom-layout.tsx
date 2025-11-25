@@ -32,7 +32,7 @@ const menuItemsAdmin: MenuItem[] = [
   { label: "Histórico", icon: <FileText className="w-5 h-5" />, href: "/admin/activities" },
   // { label: "Home", icon: <LayoutDashboard className="w-5 h-5" />, href: "/admin/home" },
   { label: "Solicitações", icon: <Ticket className="w-5 h-5" />, href: "/admin/requests" },
-  { label: "Clientes", icon: <Users className="w-5 h-5" />, href: "/admin/clients" },
+  { label: "Empresas", icon: <Users className="w-5 h-5" />, href: "/admin/clients" },
 ];
 
 const menuItemsCompany: MenuItem[] = [

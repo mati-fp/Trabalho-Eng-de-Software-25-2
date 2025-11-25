@@ -15,3 +15,9 @@ export interface BulkCreateIpPayload {
   ips: CreateIpPayload[];
 }
 
+export interface RoomSummary {
+  id: string;
+  name: string;
+  hasCompanies: boolean;
+}
+

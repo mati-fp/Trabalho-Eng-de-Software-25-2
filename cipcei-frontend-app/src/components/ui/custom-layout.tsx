@@ -36,6 +36,7 @@ const menuItemsAdmin: MenuItem[] = [
 const menuItemsCompany: MenuItem[] = [
   { label: "Ips alocados", icon: <LayoutDashboard className="w-5 h-5" />, href: "/company/ips" },
   { label: "Solicitar IP", icon: <Ticket className="w-5 h-5" />, href: "/company/request-ip" },
+  { label: "Solicitações", icon: <Ticket className="w-5 h-5" />, href: "/company/requests" },
   { label: "Ajuda (MAC)", icon: <Database className="w-5 h-5" />, href: "/company/help-mac" },
 ];
 

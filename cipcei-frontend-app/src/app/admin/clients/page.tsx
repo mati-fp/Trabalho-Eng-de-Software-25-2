@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Eye, Pencil, Trash2, Plus } from "lucide-react";
 import CompanyModal from "./components/CompanyModal";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
+import Toast from "@/components/ui/toast";
 import {
   CreateCompanyPayload,
   UpdateCompanyPayload,
@@ -45,6 +47,13 @@ export default function AdminClientsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | undefined>(undefined);
   const [modalLoading, setModalLoading] = useState(false);
+
+  // Dialog and toast states
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [companyToDelete, setCompanyToDelete] = useState<string | null>(null);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastVariant, setToastVariant] = useState<"success" | "error" | "info" | "warning">("info");
 
   // Fetch companies from API
   useEffect(() => {
@@ -156,20 +165,31 @@ export default function AdminClientsPage() {
     });
   };
 
-  // Handle delete
-  const handleDelete = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir este cliente?")) {
-      return;
-    }
+  // Handle delete - open confirmation dialog
+  const handleDelete = (id: string) => {
+    setCompanyToDelete(id);
+    setConfirmDialogOpen(true);
+  };
+
+  // Confirm delete action
+  const handleConfirmDelete = async () => {
+    if (!companyToDelete) return;
 
     try {
-      await CompaniesAPI.deleteCompany(id);
+      await CompaniesAPI.deleteCompany(companyToDelete);
       // Refresh companies list
       const data = await CompaniesAPI.findAllCompanies();
       setCompanies(data);
+      setToastMessage("Cliente excluído com sucesso!");
+      setToastVariant("success");
+      setToastOpen(true);
     } catch (err) {
-      alert("Erro ao excluir cliente. Tente novamente.");
+      setToastMessage("Erro ao excluir cliente. Tente novamente.");
+      setToastVariant("error");
+      setToastOpen(true);
       console.error("Error deleting company:", err);
+    } finally {
+      setCompanyToDelete(null);
     }
   };
 
@@ -215,13 +235,22 @@ export default function AdminClientsPage() {
 
       // Close modal
       handleModalClose();
+      setToastMessage(
+        editingCompany
+          ? "Empresa atualizada com sucesso!"
+          : "Empresa criada com sucesso!"
+      );
+      setToastVariant("success");
+      setToastOpen(true);
     } catch (err) {
       console.error("Error saving company:", err);
-      alert(
+      setToastMessage(
         editingCompany
           ? "Erro ao atualizar empresa. Tente novamente."
           : "Erro ao criar empresa. Tente novamente."
       );
+      setToastVariant("error");
+      setToastOpen(true);
     } finally {
       setModalLoading(false);
     }
@@ -442,6 +471,29 @@ export default function AdminClientsPage() {
         onSubmit={handleModalSubmit}
         company={editingCompany}
         loading={modalLoading}
+      />
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        open={confirmDialogOpen}
+        onClose={() => {
+          setConfirmDialogOpen(false);
+          setCompanyToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Excluir Cliente"
+        message="Tem certeza que deseja excluir este cliente?"
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        variant="destructive"
+      />
+
+      {/* Toast Notification */}
+      <Toast
+        open={toastOpen}
+        onClose={() => setToastOpen(false)}
+        message={toastMessage}
+        variant={toastVariant}
       />
     </div>
   );

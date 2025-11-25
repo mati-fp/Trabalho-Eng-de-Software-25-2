@@ -18,23 +18,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import RequestActionsMenu from "./components/RequestActionsMenu";
 import { getRequestTypeBadge, getStatusBadge } from "@/components/ui/table-badge";
 import { formatDate } from "@/lib/utils";
+import CancelRequestButton from "./components/CancelRequestButton";
 
-type SortField = "company" | "requestType" | "status" | "requestedBy" | "requestDate";
+type SortField = "requestType" | "status" | "requestedBy" | "requestDate";
 type SortOrder = "asc" | "desc";
 
-export default function AdminRequestsPage() {
+export default function CompanyRequestsPage() {
   const [requests, setRequests] = useState<IpRequest[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<IpRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Filter states
-  const [companyNameFilter, setCompanyNameFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [requestTypeFilter, setRequestTypeFilter] = useState<string>("all");
 
@@ -53,7 +51,7 @@ export default function AdminRequestsPage() {
         setLoading(true);
         setError(null);
 
-        const data = await IpRequestsAPI.findAllIpRequests();
+        const data = await IpRequestsAPI.findMyIpRequests();
         setRequests(data);
         setFilteredRequests(data);
       } catch (err) {
@@ -71,15 +69,6 @@ export default function AdminRequestsPage() {
   useEffect(() => {
     let result = [...requests];
 
-    // Apply company name filter
-    if (companyNameFilter.trim()) {
-      result = result.filter((request) =>
-        request.company?.user?.name
-          ?.toLowerCase()
-          .includes(companyNameFilter.trim().toLowerCase())
-      );
-    }
-
     // Apply status filter
     if (statusFilter !== "all") {
       result = result.filter((request) => request.status === statusFilter);
@@ -94,11 +83,7 @@ export default function AdminRequestsPage() {
     result.sort((a, b) => {
       let compareValue = 0;
 
-      if (sortField === "company") {
-        const nameA = a.company?.user?.name || "";
-        const nameB = b.company?.user?.name || "";
-        compareValue = nameA.localeCompare(nameB);
-      } else if (sortField === "requestType") {
+      if (sortField === "requestType") {
         compareValue = a.requestType.localeCompare(b.requestType);
       } else if (sortField === "status") {
         compareValue = a.status.localeCompare(b.status);
@@ -117,7 +102,7 @@ export default function AdminRequestsPage() {
 
     setFilteredRequests(result);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [requests, companyNameFilter, statusFilter, requestTypeFilter, sortField, sortOrder]);
+  }, [requests, statusFilter, requestTypeFilter, sortField, sortOrder]);
 
   // Pagination
   const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
@@ -127,7 +112,6 @@ export default function AdminRequestsPage() {
 
   // Clear all filters
   const handleClearFilters = () => {
-    setCompanyNameFilter("");
     setStatusFilter("all");
     setRequestTypeFilter("all");
   };
@@ -145,7 +129,7 @@ export default function AdminRequestsPage() {
   // Refresh requests list after action
   const handleRefreshRequests = async () => {
     try {
-      const data = await IpRequestsAPI.findAllIpRequests();
+      const data = await IpRequestsAPI.findMyIpRequests();
       setRequests(data);
     } catch (err) {
       console.error("Error refreshing requests:", err);
@@ -156,10 +140,10 @@ export default function AdminRequestsPage() {
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-          Gerenciamento de Solicitações
+          Minhas Solicitações
         </h1>
         <p className="text-slate-600 dark:text-slate-400 mt-2">
-          Visualize e gerencie as solicitações de IP do sistema
+          Visualize e gerencie suas solicitações de IP
         </p>
       </div>
 
@@ -169,19 +153,6 @@ export default function AdminRequestsPage() {
           Filtros
         </h2>
         <div className="flex flex-row items-end gap-4">
-          {/* Company Name Filter */}
-          <div className="flex-1">
-            <label className="block text-sm font-medium mb-2 text-muted-foreground">
-              Buscar por Empresa
-            </label>
-            <Input
-              placeholder="Nome da empresa"
-              value={companyNameFilter}
-              onChange={(e) => setCompanyNameFilter(e.target.value)}
-              className="w-full"
-            />
-          </div>
-
           {/* Status Filter */}
           <div className="w-48">
             <label className="block text-sm font-medium mb-2 text-muted-foreground">
@@ -245,17 +216,6 @@ export default function AdminRequestsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleSort("company")}
-                  >
-                    Empresa
-                    {sortField === "company" && (
-                      <span className="ml-2">
-                        {sortOrder === "asc" ? "↑" : "↓"}
-                      </span>
-                    )}
-                  </TableHead>
-                  <TableHead
                     className="cursor-pointer hover:bg-muted/50 text-center"
                     onClick={() => handleSort("requestType")}
                   >
@@ -314,11 +274,6 @@ export default function AdminRequestsPage() {
               <TableBody>
                 {currentRequests.map((request) => (
                   <TableRow key={request.id}>
-                    <TableCell className="font-medium">
-                      {request.company?.user?.name || (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
                     <TableCell className="text-center">
                       {getRequestTypeBadge(request.requestType)}
                     </TableCell>
@@ -349,15 +304,15 @@ export default function AdminRequestsPage() {
                     </TableCell>
                     <TableCell>
                       {request.status === "rejected" && request.rejectionReason ? (
-                        <div className="max-w-xs truncate" title={request.rejectionReason}>
-                          {request.rejectionReason}
+                        <div className="max-w-xs" title={request.rejectionReason}>
+                          Motivo de rejeição: <br /> {request.rejectionReason}
                         </div>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell className="text-center">
-                      <RequestActionsMenu
+                      <CancelRequestButton
                         request={request}
                         onActionComplete={handleRefreshRequests}
                       />
@@ -408,3 +363,4 @@ export default function AdminRequestsPage() {
     </div>
   );
 }
+

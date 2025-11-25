@@ -21,49 +21,49 @@ describe('CompaniesService', () => {
 
   const mockRoom: Room = {
     id: 'room-uuid-123',
-    roomNumber: 101,
-    description: 'Test Room',
+    number: 101,
     ips: [],
     companies: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
   };
 
-  const mockUser: User = {
+  const mockUser = {
     id: 'user-uuid-456',
     email: 'company@test.com',
     name: 'Company User',
     password: 'hashedPassword',
     role: UserRole.COMPANY,
     isActive: true,
-    company: null,
+    company: undefined,
     createdAt: new Date(),
     updatedAt: new Date(),
-    deletedAt: null,
-  };
+    deletedAt: undefined,
+    hashPassword: jest.fn(),
+  } as unknown as User;
 
-  const mockCompany: Company = {
+  const mockCompany = {
     id: 'company-uuid-789',
     user: mockUser,
     room: mockRoom,
     createdAt: new Date(),
     updatedAt: new Date(),
-    deletedAt: null,
-  };
+    deletedAt: undefined,
+  } as Company;
 
-  const mockIp: Ip = {
+  const mockIp = {
     id: 'ip-uuid-001',
     address: '10.0.0.100',
     macAddress: 'AA:BB:CC:DD:EE:FF',
+    userName: 'Test User',
     isTemporary: false,
-    expiresAt: null,
+    expiresAt: undefined,
+    lastRenewedAt: undefined,
     status: IpStatus.IN_USE,
     company: mockCompany,
     room: mockRoom,
     assignedAt: new Date(),
     createdAt: new Date(),
     updatedAt: new Date(),
-  };
+  } as unknown as Ip;
 
   beforeEach(async () => {
     mockEntityManager = {
@@ -134,13 +134,15 @@ describe('CompaniesService', () => {
   });
 
   describe('findAll', () => {
-    it('should return all companies', async () => {
+    it('should return all companies with roomNumber (without room object)', async () => {
       companyRepository.find.mockResolvedValue([mockCompany]);
 
       const result = await service.findAll();
 
-      expect(result).toEqual([mockCompany]);
-      expect(companyRepository.find).toHaveBeenCalledTimes(1);
+      // Deve retornar empresa sem o objeto room, apenas com roomNumber
+      const { room, ...companyWithoutRoom } = mockCompany;
+      expect(result).toEqual([{ ...companyWithoutRoom, roomNumber: 101 }]);
+      expect(companyRepository.find).toHaveBeenCalledWith({ relations: ['room'] });
     });
 
     it('should return empty array when no companies exist', async () => {
@@ -149,6 +151,16 @@ describe('CompaniesService', () => {
       const result = await service.findAll();
 
       expect(result).toEqual([]);
+    });
+
+    it('should return roomNumber as null when company has no room', async () => {
+      const companyWithoutRoom = { ...mockCompany, room: undefined };
+      companyRepository.find.mockResolvedValue([companyWithoutRoom as any]);
+
+      const result = await service.findAll();
+
+      const { room, ...expectedCompany } = companyWithoutRoom;
+      expect(result).toEqual([{ ...expectedCompany, roomNumber: null }]);
     });
   });
 
@@ -257,7 +269,7 @@ describe('CompaniesService', () => {
     });
 
     it('should throw NotFoundException when company does not exist', async () => {
-      companyRepository.preload.mockResolvedValue(null);
+      companyRepository.preload.mockResolvedValue(undefined);
 
       await expect(service.update('non-existent-id', updateDto)).rejects.toThrow(
         new NotFoundException('Company with ID "non-existent-id" not found'),
@@ -267,7 +279,7 @@ describe('CompaniesService', () => {
 
   describe('remove', () => {
     it('should successfully remove a company and deactivate user', async () => {
-      dataSource.transaction.mockImplementation(async (callback) => {
+      (dataSource.transaction as jest.Mock).mockImplementation(async (callback: any) => {
         return callback(mockEntityManager);
       });
 
@@ -294,7 +306,7 @@ describe('CompaniesService', () => {
     it('should release IPs when removing company', async () => {
       const mockIpsToRelease = [{ id: 'ip-1' }, { id: 'ip-2' }];
 
-      dataSource.transaction.mockImplementation(async (callback) => {
+      (dataSource.transaction as jest.Mock).mockImplementation(async (callback: any) => {
         return callback(mockEntityManager);
       });
 
@@ -331,7 +343,7 @@ describe('CompaniesService', () => {
     });
 
     it('should throw NotFoundException when company does not exist', async () => {
-      dataSource.transaction.mockImplementation(async (callback) => {
+      (dataSource.transaction as jest.Mock).mockImplementation(async (callback: any) => {
         return callback(mockEntityManager);
       });
 

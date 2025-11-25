@@ -28,6 +28,18 @@ export class RoomsController {
     return this.roomsService.findAll();
   }
 
+  @Get('summary')
+  @ApiOperation({
+    summary: 'Listar salas resumidas',
+    description: 'Retorna lista simplificada de salas com status de ocupacao',
+  })
+  @ApiResponse({ status: 200, description: 'Lista resumida de salas' })
+  @ApiResponse({ status: 401, description: 'Nao autenticado' })
+  @ApiResponse({ status: 403, description: 'Acesso negado - apenas admin' })
+  async getSummary() {
+    return this.roomsService.getSummary();
+  }
+
   @Get(':id')
   @ApiOperation({
     summary: 'Buscar sala por ID',

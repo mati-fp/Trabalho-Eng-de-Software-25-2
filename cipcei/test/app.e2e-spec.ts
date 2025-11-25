@@ -565,8 +565,51 @@ describe('CIPCEI Backend E2E Tests', () => {
       });
     });
 
-    // Note: GET /rooms endpoint doesn't exist in the current implementation
-    // Only POST /rooms and POST /rooms/:roomId/ips are available
+    describe('GET /rooms/summary (Admin only)', () => {
+      it('should return 403 for company user', () => {
+        return request(app.getHttpServer())
+          .get('/rooms/summary')
+          .set('Authorization', `Bearer ${companyToken}`)
+          .expect(403);
+      });
+
+      it('should return rooms summary for admin', async () => {
+        const response = await request(app.getHttpServer())
+          .get('/rooms/summary')
+          .set('Authorization', `Bearer ${adminToken}`)
+          .expect(200);
+
+        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body.length).toBeGreaterThan(0);
+        expect(response.body[0]).toHaveProperty('id');
+        expect(response.body[0]).toHaveProperty('name');
+        expect(response.body[0]).toHaveProperty('hasCompanies');
+      });
+
+      it('should return hasCompanies as true for room with company', async () => {
+        const response = await request(app.getHttpServer())
+          .get('/rooms/summary')
+          .set('Authorization', `Bearer ${adminToken}`)
+          .expect(200);
+
+        // testRoom (101) has testCompany assigned
+        const room101 = response.body.find((r: any) => r.name === 'Sala 101');
+        expect(room101).toBeDefined();
+        expect(room101.hasCompanies).toBe(true);
+      });
+
+      it('should return hasCompanies as false for room without company', async () => {
+        const response = await request(app.getHttpServer())
+          .get('/rooms/summary')
+          .set('Authorization', `Bearer ${adminToken}`)
+          .expect(200);
+
+        // Room 102 was created without company
+        const room102 = response.body.find((r: any) => r.name === 'Sala 102');
+        expect(room102).toBeDefined();
+        expect(room102.hasCompanies).toBe(false);
+      });
+    });
   });
 
   describe('Authorization Tests', () => {

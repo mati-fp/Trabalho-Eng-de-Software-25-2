@@ -191,4 +191,57 @@ describe('RoomsService', () => {
       expect(result).toEqual([]);
     });
   });
+
+  describe('getSummary', () => {
+    it('should return rooms with hasCompanies flag', async () => {
+      const roomWithCompanies = { id: 'room-1', number: 106, companies: [mockCompany], ips: [] };
+      const roomWithoutCompanies = { id: 'room-2', number: 108, companies: [], ips: [] };
+      repository.find.mockResolvedValue([roomWithCompanies, roomWithoutCompanies]);
+
+      const result = await service.getSummary();
+
+      expect(result).toEqual([
+        { id: 'room-1', name: 'Sala 106', hasCompanies: true },
+        { id: 'room-2', name: 'Sala 108', hasCompanies: false },
+      ]);
+    });
+
+    it('should return empty array when no rooms exist', async () => {
+      repository.find.mockResolvedValue([]);
+
+      const result = await service.getSummary();
+
+      expect(result).toEqual([]);
+    });
+
+    it('should order rooms by number ascending', async () => {
+      repository.find.mockResolvedValue([]);
+
+      await service.getSummary();
+
+      expect(repository.find).toHaveBeenCalledWith({
+        relations: ['companies'],
+        order: { number: 'ASC' },
+      });
+    });
+
+    it('should format room name correctly', async () => {
+      const room = { id: 'room-1', number: 205, companies: [], ips: [] };
+      repository.find.mockResolvedValue([room]);
+
+      const result = await service.getSummary();
+
+      expect(result[0].name).toBe('Sala 205');
+    });
+
+    it('should handle multiple companies in a room', async () => {
+      const company2 = { ...mockCompany, id: 'company-2' };
+      const roomWithMultiple = { id: 'room-1', number: 100, companies: [mockCompany, company2], ips: [] };
+      repository.find.mockResolvedValue([roomWithMultiple]);
+
+      const result = await service.getSummary();
+
+      expect(result[0].hasCompanies).toBe(true);
+    });
+  });
 });

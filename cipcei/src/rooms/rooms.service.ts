@@ -44,4 +44,17 @@ export class RoomsService {
     }
     return room.companies;
   }
+
+  async getSummary(): Promise<{ id: string; name: string; hasCompanies: boolean }[]> {
+    const rooms = await this.roomRepository.find({
+      relations: ['companies'],
+      order: { number: 'ASC' },
+    });
+
+    return rooms.map((room) => ({
+      id: room.id,
+      name: `Sala ${room.number}`,
+      hasCompanies: room.companies.length > 0,
+    }));
+  }
 }

@@ -16,8 +16,6 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  console.log({ profile })
-
   useEffect(() => {
     const token = getAuthToken();
     if (!token) {

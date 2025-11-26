@@ -48,7 +48,6 @@ api.interceptors.request.use(
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => {
-    console.log({ response })
     return response;
   },
   async (error: AxiosError) => {

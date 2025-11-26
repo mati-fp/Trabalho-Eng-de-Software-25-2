@@ -46,6 +46,23 @@ export default function AdminIpsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // Check if IP is expired
+  const isExpired = (ip: IP): boolean => {
+    if (!ip.expiresAt) return false;
+    return new Date(ip.expiresAt) < new Date();
+  };
+
+  // Format expiration date
+  const formatExpirationDate = (expiresAt?: string): string => {
+    if (!expiresAt) return "-";
+    const date = new Date(expiresAt);
+    return date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
   // Fetch IPs from API
   useEffect(() => {
     const fetchIps = async () => {
@@ -56,7 +73,7 @@ export default function AdminIpsPage() {
         const params: FindAllIpsParams = {};
 
         if (statusFilter !== "all") {
-          params.status = statusFilter as "available" | "in_use";
+          params.status = statusFilter as "available" | "in_use" | "expired";
         }
 
         if (companyNameFilter.trim()) {
@@ -92,6 +109,11 @@ export default function AdminIpsPage() {
       );
     }
 
+    // Apply expired filter locally (in case backend doesn't handle it)
+    if (statusFilter === "expired") {
+      result = result.filter((ip) => isExpired(ip) || ip.status === "expired");
+    }
+
     // Apply sorting
     result.sort((a, b) => {
       let compareValue = 0;
@@ -107,7 +129,7 @@ export default function AdminIpsPage() {
 
     setFilteredIps(result);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [ips, searchQuery, sortField, sortOrder]);
+  }, [ips, searchQuery, sortField, sortOrder, statusFilter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredIps.length / itemsPerPage);
@@ -139,7 +161,7 @@ export default function AdminIpsPage() {
       const params: FindAllIpsParams = {};
 
       if (statusFilter !== "all") {
-        params.status = statusFilter as "available" | "in_use";
+        params.status = statusFilter as "available" | "in_use" | "expired";
       }
 
       if (companyNameFilter.trim()) {
@@ -164,6 +186,13 @@ export default function AdminIpsPage() {
       return (
         <Badge variant="default" className="bg-secondary text-primary-foreground">
           Disponível
+        </Badge>
+      );
+    }
+    if (status === "expired") {
+      return (
+        <Badge variant="destructive" className="bg-destructive/80 text-destructive-foreground">
+          Expirado
         </Badge>
       );
     }
@@ -204,6 +233,7 @@ export default function AdminIpsPage() {
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="available">Disponível</SelectItem>
                 <SelectItem value="in_use">Alocado</SelectItem>
+                <SelectItem value="expired">Expirado</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -295,12 +325,16 @@ export default function AdminIpsPage() {
                   <TableHead className="text-center">Endereço MAC</TableHead>
                   <TableHead className="text-center">Sala</TableHead>
                   <TableHead className="text-center">Empresa</TableHead>
+                  <TableHead className="text-center">Data de Expiração</TableHead>
                   <TableHead className="text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {currentIps.map((ip) => (
-                  <TableRow key={ip.id}>
+                  <TableRow 
+                    key={ip.id}
+                    className={isExpired(ip) ? "bg-red-50 dark:bg-red-950/20" : ""}
+                  >
                     <TableCell className="font-medium">{ip.address}</TableCell>
                     <TableCell className="text-center">{getStatusBadge(ip.status)}</TableCell>
                     <TableCell className="text-center">
@@ -317,6 +351,9 @@ export default function AdminIpsPage() {
                       {ip.company?.user?.name || (
                         <span className="text-muted-foreground">-</span>
                       )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {formatExpirationDate(ip.expiresAt)}
                     </TableCell>
                     <TableCell className="text-center">
                       <IpActionsButton

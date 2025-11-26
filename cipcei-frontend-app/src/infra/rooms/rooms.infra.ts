@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
-import { CreateRoomPayload, BulkCreateIpPayload, RoomSummary } from "./rooms.payloads";
-import { Room, IP, Company } from "@/types";
+import { CreateRoomPayload, BulkCreateIpPayload } from "./rooms.payloads";
+import { Room, IP, Company, RoomSummary } from "@/types";
 
 const findAllRooms = async (): Promise<Room[]> => {
   const response = await api.get("/rooms");

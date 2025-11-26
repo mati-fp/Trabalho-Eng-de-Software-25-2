@@ -8,7 +8,6 @@ import { useAuth } from "@/hooks";
 export default function Home() {
   const router = useRouter();
   const { profile } = useAuth();
-  console.log({ profile })
 
   useEffect(() => {
     if (profile?.role === "admin") {

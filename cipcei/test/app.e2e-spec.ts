@@ -312,6 +312,7 @@ describe('CIPCEI Backend E2E Tests', () => {
           .set('Authorization', `Bearer ${adminToken}`)
           .expect(200);
 
+        // Resposta como array simples
         expect(Array.isArray(response.body)).toBe(true);
         expect(response.body.length).toBeGreaterThan(0);
       });
@@ -508,6 +509,7 @@ describe('CIPCEI Backend E2E Tests', () => {
           .set('Authorization', `Bearer ${adminToken}`)
           .expect(200);
 
+        // Resposta como array simples
         expect(Array.isArray(response.body)).toBe(true);
         expect(response.body.length).toBeGreaterThan(0);
       });
@@ -518,6 +520,7 @@ describe('CIPCEI Backend E2E Tests', () => {
           .set('Authorization', `Bearer ${adminToken}`)
           .expect(200);
 
+        // Resposta como array simples
         expect(Array.isArray(response.body)).toBe(true);
       });
     });
@@ -538,7 +541,10 @@ describe('CIPCEI Backend E2E Tests', () => {
           .set('Authorization', `Bearer ${adminToken}`)
           .expect(200);
 
-        expect(Array.isArray(response.body)).toBe(true);
+        // Resposta paginada com data e meta
+        expect(response.body).toHaveProperty('data');
+        expect(response.body).toHaveProperty('meta');
+        expect(Array.isArray(response.body.data)).toBe(true);
       });
     });
   });
@@ -621,6 +627,7 @@ describe('CIPCEI Backend E2E Tests', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
+      // Resposta como array simples
       expect(Array.isArray(response.body)).toBe(true);
     });
 

@@ -8,6 +8,7 @@ import { User } from '../users/entities/user.entity';
 import { FindIpHistoryDto } from './dto/find-ip-history.dto';
 import { IpHistoryResponseDto } from './dto/ip-history-response.dto';
 import { toIpHistoryResponseDtoList } from './ip-history.mapper';
+import { PaginatedResponseDto, createPaginatedResponse } from '../common/dto/paginated-response.dto';
 
 @Injectable()
 export class IpHistoryService {
@@ -60,10 +61,12 @@ export class IpHistoryService {
   }
 
   /**
-   * Busca histórico com filtros
+   * Busca historico com filtros e paginacao
    */
-  async findAll(filters: FindIpHistoryDto): Promise<IpHistoryResponseDto[]> {
+  async findAll(filters: FindIpHistoryDto): Promise<PaginatedResponseDto<IpHistoryResponseDto>> {
     const where: any = {};
+    const page = filters.page || 1;
+    const limit = filters.limit || 10;
 
     if (filters.companyId) {
       where.company = { id: filters.companyId };
@@ -94,12 +97,16 @@ export class IpHistoryService {
       );
     }
 
-    const histories = await this.ipHistoryRepository.find({
+    const [histories, totalItems] = await this.ipHistoryRepository.findAndCount({
       where,
       relations: ['ip', 'company', 'company.user', 'performedBy'],
       order: { performedAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
-    return toIpHistoryResponseDtoList(histories);
+
+    const data = toIpHistoryResponseDtoList(histories);
+    return createPaginatedResponse(data, totalItems, page, limit);
   }
 
   /**

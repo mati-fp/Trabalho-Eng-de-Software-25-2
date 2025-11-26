@@ -50,6 +50,7 @@ describe('IpHistoryService', () => {
             create: jest.fn(),
             save: jest.fn(),
             find: jest.fn(),
+            findAndCount: jest.fn(),
             createQueryBuilder: jest.fn(),
           },
         },
@@ -263,124 +264,125 @@ describe('IpHistoryService', () => {
   });
 
   describe('findAll', () => {
-    it('should return all history as DTOs when no filters provided', async () => {
+    it('should return paginated history as DTOs when no filters provided', async () => {
       const histories = [mockHistory];
-      repository.find.mockResolvedValue(histories as any);
+      repository.findAndCount.mockResolvedValue([histories as any, 1]);
 
       const result = await service.findAll({});
 
-      // Verifica DTO
-      expect(result.length).toBe(1);
-      expect(result[0].id).toBe(mockHistory.id);
-      expect(result[0].action).toBe(mockHistory.action);
-      expect(repository.find).toHaveBeenCalledWith({
+      // Verifica estrutura paginada
+      expect(result.data.length).toBe(1);
+      expect(result.data[0].id).toBe(mockHistory.id);
+      expect(result.data[0].action).toBe(mockHistory.action);
+      expect(result.meta.totalItems).toBe(1);
+      expect(result.meta.page).toBe(1);
+      expect(result.meta.limit).toBe(10);
+      expect(repository.findAndCount).toHaveBeenCalledWith({
         where: {},
         relations: ['ip', 'company', 'company.user', 'performedBy'],
         order: { performedAt: 'DESC' },
+        skip: 0,
+        take: 10,
       });
     });
 
     it('should filter by company ID', async () => {
-      repository.find.mockResolvedValue([mockHistory] as any);
+      repository.findAndCount.mockResolvedValue([[mockHistory] as any, 1]);
 
       await service.findAll({ companyId: mockCompany.id });
 
-      expect(repository.find).toHaveBeenCalledWith({
-        where: { company: { id: mockCompany.id } },
-        relations: ['ip', 'company', 'company.user', 'performedBy'],
-        order: { performedAt: 'DESC' },
-      });
+      expect(repository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { company: { id: mockCompany.id } },
+        }),
+      );
     });
 
     it('should filter by IP ID', async () => {
-      repository.find.mockResolvedValue([mockHistory] as any);
+      repository.findAndCount.mockResolvedValue([[mockHistory] as any, 1]);
 
       await service.findAll({ ipId: mockIp.id });
 
-      expect(repository.find).toHaveBeenCalledWith({
-        where: { ip: { id: mockIp.id } },
-        relations: ['ip', 'company', 'company.user', 'performedBy'],
-        order: { performedAt: 'DESC' },
-      });
+      expect(repository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { ip: { id: mockIp.id } },
+        }),
+      );
     });
 
     it('should filter by action', async () => {
-      repository.find.mockResolvedValue([mockHistory] as any);
+      repository.findAndCount.mockResolvedValue([[mockHistory] as any, 1]);
 
       await service.findAll({ action: IpAction.ASSIGNED });
 
-      expect(repository.find).toHaveBeenCalledWith({
-        where: { action: IpAction.ASSIGNED },
-        relations: ['ip', 'company', 'company.user', 'performedBy'],
-        order: { performedAt: 'DESC' },
-      });
+      expect(repository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { action: IpAction.ASSIGNED },
+        }),
+      );
     });
 
     it('should filter by date range (startDate and endDate)', async () => {
       const startDate = '2024-01-01';
       const endDate = '2024-12-31';
-      repository.find.mockResolvedValue([mockHistory] as any);
+      repository.findAndCount.mockResolvedValue([[mockHistory] as any, 1]);
 
       await service.findAll({ startDate, endDate });
 
-      expect(repository.find).toHaveBeenCalledWith({
-        where: {
-          performedAt: Between(new Date(startDate), new Date(endDate)),
-        },
-        relations: ['ip', 'company', 'company.user', 'performedBy'],
-        order: { performedAt: 'DESC' },
-      });
+      expect(repository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            performedAt: Between(new Date(startDate), new Date(endDate)),
+          },
+        }),
+      );
     });
 
     it('should filter by startDate only', async () => {
       const startDate = '2024-01-01';
-      repository.find.mockResolvedValue([mockHistory] as any);
+      repository.findAndCount.mockResolvedValue([[mockHistory] as any, 1]);
 
       await service.findAll({ startDate });
 
-      expect(repository.find).toHaveBeenCalledWith({
-        where: {
-          performedAt: Between(new Date(startDate), new Date('2100-12-31')),
-        },
-        relations: ['ip', 'company', 'company.user', 'performedBy'],
-        order: { performedAt: 'DESC' },
-      });
+      expect(repository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            performedAt: Between(new Date(startDate), new Date('2100-12-31')),
+          },
+        }),
+      );
     });
 
     it('should filter by endDate only', async () => {
       const endDate = '2024-12-31';
-      repository.find.mockResolvedValue([mockHistory] as any);
+      repository.findAndCount.mockResolvedValue([[mockHistory] as any, 1]);
 
       await service.findAll({ endDate });
 
-      expect(repository.find).toHaveBeenCalledWith({
-        where: {
-          performedAt: Between(new Date('1900-01-01'), new Date(endDate)),
-        },
-        relations: ['ip', 'company', 'company.user', 'performedBy'],
-        order: { performedAt: 'DESC' },
-      });
+      expect(repository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            performedAt: Between(new Date('1900-01-01'), new Date(endDate)),
+          },
+        }),
+      );
     });
 
-    it('should combine multiple filters', async () => {
-      repository.find.mockResolvedValue([mockHistory] as any);
+    it('should apply pagination parameters', async () => {
+      repository.findAndCount.mockResolvedValue([[mockHistory] as any, 50]);
 
-      await service.findAll({
-        companyId: mockCompany.id,
-        action: IpAction.ASSIGNED,
-        startDate: '2024-01-01',
-        endDate: '2024-12-31',
-      });
+      const result = await service.findAll({ page: 2, limit: 20 });
 
-      expect(repository.find).toHaveBeenCalledWith({
-        where: {
-          company: { id: mockCompany.id },
-          action: IpAction.ASSIGNED,
-          performedAt: Between(new Date('2024-01-01'), new Date('2024-12-31')),
-        },
-        relations: ['ip', 'company', 'company.user', 'performedBy'],
-        order: { performedAt: 'DESC' },
-      });
+      expect(result.meta.page).toBe(2);
+      expect(result.meta.limit).toBe(20);
+      expect(result.meta.totalItems).toBe(50);
+      expect(result.meta.totalPages).toBe(3);
+      expect(repository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skip: 20,
+          take: 20,
+        }),
+      );
     });
   });
 

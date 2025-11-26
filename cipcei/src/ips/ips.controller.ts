@@ -30,10 +30,10 @@ export class IpsController {
   @Get()
   @ApiOperation({
     summary: 'Listar IPs com filtros',
-    description: 'Retorna lista de endereços IP com filtros opcionais por status, empresa ou sala',
+    description: 'Retorna lista de enderecos IP com filtros opcionais por status, empresa ou sala',
   })
   @ApiResponse({ status: 200, description: 'Lista de IPs retornada com sucesso', type: [IpResponseDto] })
-  @ApiResponse({ status: 401, description: 'Não autenticado' })
+  @ApiResponse({ status: 401, description: 'Nao autenticado' })
   async findAll(@Query() findAllIpsDto: FindAllIpsDto): Promise<IpResponseDto[]> {
     return this.ipsService.findAll(findAllIpsDto);
   }

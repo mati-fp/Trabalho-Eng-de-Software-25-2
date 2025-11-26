@@ -29,6 +29,7 @@ export class CompaniesService {
   async findAll(): Promise<CompanyResponseDto[]> {
     const companies = await this.companyRepository.find({
       relations: ['room', 'user'],
+      order: { createdAt: 'DESC' },
     });
     return toCompanyResponseDtoList(companies);
   }

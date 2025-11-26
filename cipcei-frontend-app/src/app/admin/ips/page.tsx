@@ -314,7 +314,7 @@ export default function AdminIpsPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-center">
-                      {ip.room?.company?.user?.name || (
+                      {ip.company?.user?.name || (
                         <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>

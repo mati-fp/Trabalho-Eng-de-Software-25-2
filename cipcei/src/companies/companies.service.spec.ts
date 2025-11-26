@@ -139,10 +139,13 @@ describe('CompaniesService', () => {
 
       const result = await service.findAll();
 
-      // Deve retornar empresa sem o objeto room, apenas com roomNumber
-      const { room, ...companyWithoutRoom } = mockCompany;
-      expect(result).toEqual([{ ...companyWithoutRoom, roomNumber: 101 }]);
-      expect(companyRepository.find).toHaveBeenCalledWith({ relations: ['room'] });
+      // Deve retornar empresa como DTO com roomNumber
+      expect(result.length).toBe(1);
+      expect(result[0].id).toBe(mockCompany.id);
+      expect(result[0].roomNumber).toBe(101);
+      expect(result[0].user.id).toBe(mockUser.id);
+      expect(result[0].user.email).toBe(mockUser.email);
+      expect(companyRepository.find).toHaveBeenCalledWith({ relations: ['room', 'user'] });
     });
 
     it('should return empty array when no companies exist', async () => {
@@ -153,14 +156,14 @@ describe('CompaniesService', () => {
       expect(result).toEqual([]);
     });
 
-    it('should return roomNumber as null when company has no room', async () => {
+    it('should return roomNumber as undefined when company has no room', async () => {
       const companyWithoutRoom = { ...mockCompany, room: undefined };
       companyRepository.find.mockResolvedValue([companyWithoutRoom as any]);
 
       const result = await service.findAll();
 
-      const { room, ...expectedCompany } = companyWithoutRoom;
-      expect(result).toEqual([{ ...expectedCompany, roomNumber: null }]);
+      expect(result.length).toBe(1);
+      expect(result[0].roomNumber).toBeUndefined();
     });
   });
 
@@ -182,10 +185,14 @@ describe('CompaniesService', () => {
       userRepository.save.mockResolvedValue(mockUser);
       companyRepository.create.mockReturnValue(mockCompany);
       companyRepository.save.mockResolvedValue(mockCompany);
+      companyRepository.findOne.mockResolvedValue(mockCompany);
 
       const result = await service.create(createDto);
 
-      expect(result).toEqual(mockCompany);
+      // Agora retorna DTO
+      expect(result.id).toBe(mockCompany.id);
+      expect(result.roomNumber).toBe(101);
+      expect(result.user.id).toBe(mockUser.id);
       expect(userRepository.findOneBy).toHaveBeenCalledWith({ email: createDto.user.email });
       expect(roomRepository.findOneBy).toHaveBeenCalledWith({ id: createDto.roomId });
       expect(userRepository.save).toHaveBeenCalledTimes(2);
@@ -223,6 +230,7 @@ describe('CompaniesService', () => {
       userRepository.save.mockResolvedValue(mockUser);
       companyRepository.create.mockReturnValue(mockCompany);
       companyRepository.save.mockResolvedValue(mockCompany);
+      companyRepository.findOne.mockResolvedValue(mockCompany);
 
       await service.create(dtoWithAdminRole);
 
@@ -233,17 +241,23 @@ describe('CompaniesService', () => {
   });
 
   describe('findOne', () => {
-    it('should find a company by id', async () => {
-      companyRepository.findOneBy.mockResolvedValue(mockCompany);
+    it('should find a company by id and return DTO', async () => {
+      companyRepository.findOne.mockResolvedValue(mockCompany);
 
       const result = await service.findOne(mockCompany.id);
 
-      expect(result).toEqual(mockCompany);
-      expect(companyRepository.findOneBy).toHaveBeenCalledWith({ id: mockCompany.id });
+      // Agora retorna DTO
+      expect(result?.id).toBe(mockCompany.id);
+      expect(result?.roomNumber).toBe(101);
+      expect(result?.user.id).toBe(mockUser.id);
+      expect(companyRepository.findOne).toHaveBeenCalledWith({
+        where: { id: mockCompany.id },
+        relations: ['room', 'user'],
+      });
     });
 
     it('should return null when company not found', async () => {
-      companyRepository.findOneBy.mockResolvedValue(null);
+      companyRepository.findOne.mockResolvedValue(null);
 
       const result = await service.findOne('non-existent-id');
 
@@ -254,14 +268,17 @@ describe('CompaniesService', () => {
   describe('update', () => {
     const updateDto: UpdateCompanyDto = {};
 
-    it('should successfully update a company', async () => {
+    it('should successfully update a company and return DTO', async () => {
       const updatedCompany = { ...mockCompany };
       companyRepository.preload.mockResolvedValue(updatedCompany);
       companyRepository.save.mockResolvedValue(updatedCompany);
+      companyRepository.findOne.mockResolvedValue(updatedCompany);
 
       const result = await service.update(mockCompany.id, updateDto);
 
-      expect(result).toEqual(updatedCompany);
+      // Agora retorna DTO
+      expect(result.id).toBe(mockCompany.id);
+      expect(result.roomNumber).toBe(101);
       expect(companyRepository.preload).toHaveBeenCalledWith({
         id: mockCompany.id,
         ...updateDto,
@@ -272,7 +289,7 @@ describe('CompaniesService', () => {
       companyRepository.preload.mockResolvedValue(undefined);
 
       await expect(service.update('non-existent-id', updateDto)).rejects.toThrow(
-        new NotFoundException('Company with ID "non-existent-id" not found'),
+        new NotFoundException('Empresa com ID "non-existent-id" nao encontrada'),
       );
     });
   });
@@ -356,15 +373,19 @@ describe('CompaniesService', () => {
   });
 
   describe('getAllMyIps', () => {
-    it('should return all IPs for a company', async () => {
+    it('should return all IPs as DTOs for a company', async () => {
       const ips = [mockIp];
       ipRepository.find.mockResolvedValue(ips);
 
       const result = await service.getAllMyIps(mockCompany.id);
 
-      expect(result).toEqual(ips);
+      // Verifica DTO
+      expect(result.length).toBe(1);
+      expect(result[0].id).toBe(mockIp.id);
+      expect(result[0].address).toBe(mockIp.address);
       expect(ipRepository.find).toHaveBeenCalledWith({
         where: { company: { id: mockCompany.id } },
+        relations: ['room', 'company', 'company.user'],
         order: { assignedAt: 'DESC' },
       });
     });
@@ -379,18 +400,22 @@ describe('CompaniesService', () => {
   });
 
   describe('getActiveIps', () => {
-    it('should return only active IPs for a company', async () => {
+    it('should return only active IPs as DTOs for a company', async () => {
       const activeIps = [mockIp];
       ipRepository.find.mockResolvedValue(activeIps);
 
       const result = await service.getActiveIps(mockCompany.id);
 
-      expect(result).toEqual(activeIps);
+      // Verifica DTO
+      expect(result.length).toBe(1);
+      expect(result[0].id).toBe(mockIp.id);
+      expect(result[0].status).toBe(IpStatus.IN_USE);
       expect(ipRepository.find).toHaveBeenCalledWith({
         where: {
           company: { id: mockCompany.id },
           status: IpStatus.IN_USE,
         },
+        relations: ['room', 'company', 'company.user'],
         order: { assignedAt: 'DESC' },
       });
     });
@@ -405,14 +430,16 @@ describe('CompaniesService', () => {
           where: expect.objectContaining({
             status: IpStatus.IN_USE,
           }),
+          relations: ['room', 'company', 'company.user'],
         }),
       );
     });
   });
 
   describe('getRenewableIps', () => {
-    it('should return renewable IPs for a company', async () => {
+    it('should return renewable IPs as DTOs for a company', async () => {
       const mockQueryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
@@ -423,7 +450,10 @@ describe('CompaniesService', () => {
 
       const result = await service.getRenewableIps(mockCompany.id);
 
-      expect(result).toEqual([mockIp]);
+      // Verifica DTO
+      expect(result.length).toBe(1);
+      expect(result[0].id).toBe(mockIp.id);
+      expect(result[0].address).toBe(mockIp.address);
       expect(mockQueryBuilder.where).toHaveBeenCalledWith('ip.companyId = :companyId', {
         companyId: mockCompany.id,
       });
@@ -434,6 +464,7 @@ describe('CompaniesService', () => {
 
     it('should filter by expiration date (7 days)', async () => {
       const mockQueryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),

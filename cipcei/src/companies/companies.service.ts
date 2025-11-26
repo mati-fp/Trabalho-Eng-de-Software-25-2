@@ -7,6 +7,10 @@ import { UpdateCompanyDto } from './dto/update-company.dto';
 import { Room } from 'src/rooms/entities/room.entity';
 import { User, UserRole } from 'src/users/entities/user.entity';
 import { Ip, IpStatus } from 'src/ips/entities/ip.entity';
+import { CompanyResponseDto } from './dto/company-response.dto';
+import { toCompanyResponseDto, toCompanyResponseDtoList } from './companies.mapper';
+import { IpResponseDto } from 'src/ips/dto/ip-response.dto';
+import { toIpResponseDtoList } from 'src/ips/ips.mapper';
 
 @Injectable()
 export class CompaniesService {
@@ -22,19 +26,14 @@ export class CompaniesService {
   private dataSource: DataSource,
   ) {}
 
-  async findAll() {
+  async findAll(): Promise<CompanyResponseDto[]> {
     const companies = await this.companyRepository.find({
-      relations: ['room'],
+      relations: ['room', 'user'],
     });
-
-    // Retorna as empresas com roomNumber (apenas o número, sem o objeto room)
-    return companies.map(({ room, ...company }) => ({
-      ...company,
-      roomNumber: room?.number ?? null,
-    }));
+    return toCompanyResponseDtoList(companies);
   }
 
-  async create(createCompanyDto: CreateCompanyDto): Promise<Company> {
+  async create(createCompanyDto: CreateCompanyDto): Promise<CompanyResponseDto> {
     const { user: userData, roomId } = createCompanyDto;
 
      // 1. Verificar se o email do usuário já existe
@@ -71,23 +70,41 @@ export class CompaniesService {
     savedUser.company = savedCompany;
     await this.userRepository.save(savedUser);
 
-    return savedCompany;
+    // Buscar a empresa completa com relacoes para retornar o DTO
+    const fullCompany = await this.companyRepository.findOne({
+      where: { id: savedCompany.id },
+      relations: ['room', 'user'],
+    });
+    return toCompanyResponseDto(fullCompany!);
   }
 
-  async findOne(id: string): Promise<Company | null> {
-    return this.companyRepository.findOneBy({ id });
+  async findOne(id: string): Promise<CompanyResponseDto | null> {
+    const company = await this.companyRepository.findOne({
+      where: { id },
+      relations: ['room', 'user'],
+    });
+    if (!company) {
+      return null;
+    }
+    return toCompanyResponseDto(company);
   }
 
-  async update(id: string, updateCompanyDto: UpdateCompanyDto): Promise<Company> {
+  async update(id: string, updateCompanyDto: UpdateCompanyDto): Promise<CompanyResponseDto> {
     // O método `preload` busca uma entidade pelo id e a atualiza com os novos dados.
     const company = await this.companyRepository.preload({
       id: id,
       ...updateCompanyDto,
     });
     if (!company) {
-      throw new NotFoundException(`Company with ID "${id}" not found`);
+      throw new NotFoundException(`Empresa com ID "${id}" nao encontrada`);
     }
-    return this.companyRepository.save(company);
+    const savedCompany = await this.companyRepository.save(company);
+    // Buscar com relacoes para retornar o DTO
+    const fullCompany = await this.companyRepository.findOne({
+      where: { id: savedCompany.id },
+      relations: ['room', 'user'],
+    });
+    return toCompanyResponseDto(fullCompany!);
   }
 
   async remove(id: string): Promise<void> {
@@ -147,36 +164,43 @@ export class CompaniesService {
   /**
    * Company visualiza TODOS os seus IPs (ativos + expirados)
    */
-  async getAllMyIps(companyId: string): Promise<Ip[]> {
-    return this.ipRepository.find({
+  async getAllMyIps(companyId: string): Promise<IpResponseDto[]> {
+    const ips = await this.ipRepository.find({
       where: { company: { id: companyId } },
+      relations: ['room', 'company', 'company.user'],
       order: { assignedAt: 'DESC' },
     });
+    return toIpResponseDtoList(ips);
   }
 
   /**
    * Company visualiza apenas IPs ativos (IN_USE)
    */
-  async getActiveIps(companyId: string): Promise<Ip[]> {
-    return this.ipRepository.find({
+  async getActiveIps(companyId: string): Promise<IpResponseDto[]> {
+    const ips = await this.ipRepository.find({
       where: {
         company: { id: companyId },
         status: IpStatus.IN_USE,
       },
+      relations: ['room', 'company', 'company.user'],
       order: { assignedAt: 'DESC' },
     });
+    return toIpResponseDtoList(ips);
   }
 
   /**
    * Company visualiza IPs que podem ser renovados
-   * (IPs temporários expirados ou próximos de expirar - 7 dias)
+   * (IPs temporarios expirados ou proximos de expirar - 7 dias)
    */
-  async getRenewableIps(companyId: string): Promise<Ip[]> {
+  async getRenewableIps(companyId: string): Promise<IpResponseDto[]> {
     const sevenDaysFromNow = new Date();
     sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
 
-    return this.ipRepository
+    const ips = await this.ipRepository
       .createQueryBuilder('ip')
+      .leftJoinAndSelect('ip.room', 'room')
+      .leftJoinAndSelect('ip.company', 'company')
+      .leftJoinAndSelect('company.user', 'user')
       .where('ip.companyId = :companyId', { companyId })
       .andWhere('ip.isTemporary = :isTemporary', { isTemporary: true })
       .andWhere(
@@ -188,5 +212,6 @@ export class CompaniesService {
       )
       .orderBy('ip.expiresAt', 'ASC')
       .getMany();
+    return toIpResponseDtoList(ips);
   }
 }

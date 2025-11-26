@@ -582,7 +582,7 @@ describe('CIPCEI Backend E2E Tests', () => {
         expect(Array.isArray(response.body)).toBe(true);
         expect(response.body.length).toBeGreaterThan(0);
         expect(response.body[0]).toHaveProperty('id');
-        expect(response.body[0]).toHaveProperty('name');
+        expect(response.body[0]).toHaveProperty('number');
         expect(response.body[0]).toHaveProperty('hasCompanies');
       });
 
@@ -593,7 +593,7 @@ describe('CIPCEI Backend E2E Tests', () => {
           .expect(200);
 
         // testRoom (101) has testCompany assigned
-        const room101 = response.body.find((r: any) => r.name === 'Sala 101');
+        const room101 = response.body.find((r: any) => r.number === 101);
         expect(room101).toBeDefined();
         expect(room101.hasCompanies).toBe(true);
       });
@@ -605,7 +605,7 @@ describe('CIPCEI Backend E2E Tests', () => {
           .expect(200);
 
         // Room 102 was created without company
-        const room102 = response.body.find((r: any) => r.name === 'Sala 102');
+        const room102 = response.body.find((r: any) => r.number === 102);
         expect(room102).toBeDefined();
         expect(room102.hasCompanies).toBe(false);
       });

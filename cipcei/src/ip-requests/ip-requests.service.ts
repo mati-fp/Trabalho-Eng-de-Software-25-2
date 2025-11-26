@@ -15,6 +15,8 @@ import { IpAction } from '../ip-history/entities/ip-history.entity';
 import { CreateIpRequestDto } from './dto/create-ip-request.dto';
 import { ApproveIpRequestDto } from './dto/approve-ip-request.dto';
 import { RejectIpRequestDto } from './dto/reject-ip-request.dto';
+import { IpRequestResponseDto } from './dto/ip-request-response.dto';
+import { toIpRequestResponseDto, toIpRequestResponseDtoList } from './ip-requests.mapper';
 
 @Injectable()
 export class IpRequestsService {
@@ -35,7 +37,7 @@ export class IpRequestsService {
   async create(
     createIpRequestDto: CreateIpRequestDto,
     user: User,
-  ): Promise<IpRequest> {
+  ): Promise<IpRequestResponseDto> {
     // Verificar se o usuário tem uma empresa associada
     if (!user.company) {
       throw new UnauthorizedException('Usuário não possui empresa associada');
@@ -43,7 +45,7 @@ export class IpRequestsService {
 
     const company = await this.companyRepository.findOne({
       where: { id: user.company.id },
-      relations: ['room'],
+      relations: ['room', 'user'],
     });
 
     if (!company || !company.room) {
@@ -105,7 +107,12 @@ export class IpRequestsService {
       });
     }
 
-    return savedRequest;
+    // Buscar com relacoes para o DTO
+    const requestWithRelations = await this.ipRequestRepository.findOne({
+      where: { id: savedRequest.id },
+      relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
+    });
+    return toIpRequestResponseDto(requestWithRelations!);
   }
 
   /**
@@ -115,7 +122,7 @@ export class IpRequestsService {
     requestId: string,
     approveDto: ApproveIpRequestDto,
     admin: User,
-  ): Promise<IpRequest> {
+  ): Promise<IpRequestResponseDto> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -138,7 +145,7 @@ export class IpRequestsService {
       // (necessario porque o eager loading da company nao carrega relacoes aninhadas)
       const companyWithRoom = await this.companyRepository.findOne({
         where: { id: request.company.id },
-        relations: ['room'],
+        relations: ['room', 'user'],
       });
 
       if (!companyWithRoom || !companyWithRoom.room) {
@@ -278,7 +285,13 @@ export class IpRequestsService {
       }
 
       await queryRunner.commitTransaction();
-      return savedRequest;
+
+      // Buscar com relacoes para o DTO
+      const requestWithRelations = await this.ipRequestRepository.findOne({
+        where: { id: savedRequest.id },
+        relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
+      });
+      return toIpRequestResponseDto(requestWithRelations!);
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -294,7 +307,7 @@ export class IpRequestsService {
     requestId: string,
     rejectDto: RejectIpRequestDto,
     admin: User,
-  ): Promise<IpRequest> {
+  ): Promise<IpRequestResponseDto> {
     const request = await this.ipRequestRepository.findOne({
       where: { id: requestId },
       relations: ['company', 'ip'],
@@ -326,13 +339,18 @@ export class IpRequestsService {
       });
     }
 
-    return savedRequest;
+    // Buscar com relacoes para o DTO
+    const requestWithRelations = await this.ipRequestRepository.findOne({
+      where: { id: savedRequest.id },
+      relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
+    });
+    return toIpRequestResponseDto(requestWithRelations!);
   }
 
   /**
    * Empresa cancela sua própria solicitação pendente
    */
-  async cancel(requestId: string, user: User): Promise<IpRequest> {
+  async cancel(requestId: string, user: User): Promise<IpRequestResponseDto> {
     const request = await this.ipRequestRepository.findOne({
       where: { id: requestId },
       relations: ['company', 'requestedBy'],
@@ -354,50 +372,64 @@ export class IpRequestsService {
     request.status = IpRequestStatus.CANCELLED;
     request.responseDate = new Date();
 
-    return this.ipRequestRepository.save(request);
+    const savedRequest = await this.ipRequestRepository.save(request);
+
+    // Buscar com relacoes para o DTO
+    const requestWithRelations = await this.ipRequestRepository.findOne({
+      where: { id: savedRequest.id },
+      relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
+    });
+    return toIpRequestResponseDto(requestWithRelations!);
   }
 
   /**
    * Listar todas as solicitações (Admin)
    */
-  async findAll(): Promise<IpRequest[]> {
-    return this.ipRequestRepository.find({
+  async findAll(): Promise<IpRequestResponseDto[]> {
+    const requests = await this.ipRequestRepository.find({
+      relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
       order: { requestDate: 'DESC' },
     });
+    return toIpRequestResponseDtoList(requests);
   }
 
   /**
    * Listar solicitações pendentes (Admin)
    */
-  async findPending(): Promise<IpRequest[]> {
-    return this.ipRequestRepository.find({
+  async findPending(): Promise<IpRequestResponseDto[]> {
+    const requests = await this.ipRequestRepository.find({
       where: { status: IpRequestStatus.PENDING },
+      relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
       order: { requestDate: 'ASC' },
     });
+    return toIpRequestResponseDtoList(requests);
   }
 
   /**
    * Listar solicitações de uma empresa (Company ou Admin)
    */
-  async findByCompany(companyId: string): Promise<IpRequest[]> {
-    return this.ipRequestRepository.find({
+  async findByCompany(companyId: string): Promise<IpRequestResponseDto[]> {
+    const requests = await this.ipRequestRepository.find({
       where: { company: { id: companyId } },
+      relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
       order: { requestDate: 'DESC' },
     });
+    return toIpRequestResponseDtoList(requests);
   }
 
   /**
    * Buscar uma solicitação específica
    */
-  async findOne(id: string): Promise<IpRequest> {
+  async findOne(id: string): Promise<IpRequestResponseDto> {
     const request = await this.ipRequestRepository.findOne({
       where: { id },
+      relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
     });
 
     if (!request) {
       throw new NotFoundException('Solicitação não encontrada');
     }
 
-    return request;
+    return toIpRequestResponseDto(request);
   }
 }

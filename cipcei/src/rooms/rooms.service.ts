@@ -3,7 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { Room } from './entities/room.entity';
-import { Company } from '../companies/entities/company.entity';
+import { RoomResponseDto, RoomSummaryResponseDto, RoomCompanyDto } from './dto/room-response.dto';
+import { toRoomResponseDto, toRoomResponseDtoList, toRoomSummaryResponseDtoList, toRoomCompaniesResponseDto } from './rooms.mapper';
 
 @Injectable()
 export class RoomsService {
@@ -12,18 +13,25 @@ export class RoomsService {
     private readonly roomRepository: Repository<Room>,
   ) {}
 
-  async create(createRoomDto: CreateRoomDto): Promise<Room> {
+  async create(createRoomDto: CreateRoomDto): Promise<RoomResponseDto> {
     const room = this.roomRepository.create({ number: createRoomDto.number });
-    return this.roomRepository.save(room);
-  }
-
-  async findAll(): Promise<Room[]> {
-    return this.roomRepository.find({
+    const savedRoom = await this.roomRepository.save(room);
+    // Buscar com relacoes para o DTO
+    const roomWithRelations = await this.roomRepository.findOne({
+      where: { id: savedRoom.id },
       relations: ['companies', 'companies.user'],
     });
+    return toRoomResponseDto(roomWithRelations!);
   }
 
-  async findOne(id: string): Promise<Room> {
+  async findAll(): Promise<RoomResponseDto[]> {
+    const rooms = await this.roomRepository.find({
+      relations: ['companies', 'companies.user'],
+    });
+    return toRoomResponseDtoList(rooms);
+  }
+
+  async findOne(id: string): Promise<RoomResponseDto> {
     const room = await this.roomRepository.findOne({
       where: { id },
       relations: ['companies', 'companies.user', 'ips'],
@@ -31,10 +39,10 @@ export class RoomsService {
     if (!room) {
       throw new NotFoundException(`Sala com ID "${id}" não encontrada`);
     }
-    return room;
+    return toRoomResponseDto(room);
   }
 
-  async getCompanies(roomId: string): Promise<Company[]> {
+  async getCompanies(roomId: string): Promise<RoomCompanyDto[]> {
     const room = await this.roomRepository.findOne({
       where: { id: roomId },
       relations: ['companies', 'companies.user'],
@@ -42,19 +50,14 @@ export class RoomsService {
     if (!room) {
       throw new NotFoundException(`Sala com ID "${roomId}" não encontrada`);
     }
-    return room.companies;
+    return toRoomCompaniesResponseDto(room.companies, room.number);
   }
 
-  async getSummary(): Promise<{ id: string; name: string; hasCompanies: boolean }[]> {
+  async getSummary(): Promise<RoomSummaryResponseDto[]> {
     const rooms = await this.roomRepository.find({
       relations: ['companies'],
       order: { number: 'ASC' },
     });
-
-    return rooms.map((room) => ({
-      id: room.id,
-      name: `Sala ${room.number}`,
-      hasCompanies: room.companies.length > 0,
-    }));
+    return toRoomSummaryResponseDtoList(rooms);
   }
 }

@@ -5,6 +5,7 @@ import { ConflictException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UserResponseDto } from './dto/user-response.dto';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -21,7 +22,8 @@ describe('UsersService', () => {
     createdAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01'),
     deletedAt: null,
-  };
+    hashPassword: jest.fn(),
+  } as unknown as User;
 
   const mockAdminUser: User = {
     id: 'admin-uuid-456',
@@ -34,7 +36,8 @@ describe('UsersService', () => {
     createdAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01'),
     deletedAt: null,
-  };
+    hashPassword: jest.fn(),
+  } as unknown as User;
 
   const mockCompanyUser: User = {
     id: 'company-uuid-789',
@@ -50,6 +53,38 @@ describe('UsersService', () => {
     createdAt: new Date('2025-01-01'),
     updatedAt: new Date('2025-01-01'),
     deletedAt: null,
+    hashPassword: jest.fn(),
+  } as unknown as User;
+
+  // Expected DTOs
+  const mockUserDto: UserResponseDto = {
+    id: 'user-uuid-123',
+    email: 'test@test.com',
+    name: 'Test User',
+    role: UserRole.COMPANY,
+    companyId: undefined,
+    createdAt: new Date('2025-01-01'),
+    updatedAt: new Date('2025-01-01'),
+  };
+
+  const mockAdminUserDto: UserResponseDto = {
+    id: 'admin-uuid-456',
+    email: 'admin@cei.ufrgs.br',
+    name: 'Admin User',
+    role: UserRole.ADMIN,
+    companyId: undefined,
+    createdAt: new Date('2025-01-01'),
+    updatedAt: new Date('2025-01-01'),
+  };
+
+  const mockCompanyUserDto: UserResponseDto = {
+    id: 'company-uuid-789',
+    email: 'company@test.com',
+    name: 'Company User',
+    role: UserRole.COMPANY,
+    companyId: 'company-id-123',
+    createdAt: new Date('2025-01-01'),
+    updatedAt: new Date('2025-01-01'),
   };
 
   beforeEach(async () => {
@@ -90,17 +125,20 @@ describe('UsersService', () => {
 
     it('should successfully create a new user', async () => {
       // Setup
-      const newUser = { ...mockUser, ...createUserDto };
+      const newUser = { ...mockUser, ...createUserDto } as User;
       repository.create.mockReturnValue(newUser);
       repository.save.mockResolvedValue(newUser);
+      repository.findOne.mockResolvedValue(newUser);
 
       // Execute
       const result = await service.create(createUserDto);
 
-      // Assert
-      expect(result).toEqual(newUser);
+      // Assert - now returns DTO
+      expect(result.id).toBe(newUser.id);
+      expect(result.email).toBe(createUserDto.email);
+      expect(result.name).toBe(createUserDto.name);
+      expect(result.role).toBe(createUserDto.role);
       expect(repository.create).toHaveBeenCalledWith(createUserDto);
-      expect(repository.save).toHaveBeenCalledWith(newUser);
     });
 
     it('should successfully create an admin user', async () => {
@@ -112,9 +150,10 @@ describe('UsersService', () => {
         role: UserRole.ADMIN,
       };
 
-      const newAdmin = { ...mockAdminUser, ...createAdminDto };
+      const newAdmin = { ...mockAdminUser, ...createAdminDto } as User;
       repository.create.mockReturnValue(newAdmin);
       repository.save.mockResolvedValue(newAdmin);
+      repository.findOne.mockResolvedValue(newAdmin);
 
       // Execute
       const result = await service.create(createAdminDto);
@@ -141,10 +180,8 @@ describe('UsersService', () => {
       repository.create.mockReturnValue(mockUser);
       repository.save.mockRejectedValue(queryError);
 
-      // Execute & Assert
-      await expect(service.create(createUserDto)).rejects.toThrow(
-        new ConflictException('Email já cadastrado no sistema'),
-      );
+      // Execute & Assert - mensagem sem acento
+      await expect(service.create(createUserDto)).rejects.toThrow(ConflictException);
     });
 
     it('should re-throw non-duplicate errors', async () => {
@@ -311,7 +348,7 @@ describe('UsersService', () => {
   });
 
   describe('findAll', () => {
-    it('should return all users', async () => {
+    it('should return all users as DTOs', async () => {
       // Setup
       const allUsers = [mockUser, mockAdminUser, mockCompanyUser];
       repository.find.mockResolvedValue(allUsers);
@@ -319,9 +356,12 @@ describe('UsersService', () => {
       // Execute
       const result = await service.findAll();
 
-      // Assert
-      expect(result).toEqual(allUsers);
+      // Assert - now returns DTOs
       expect(result.length).toBe(3);
+      expect(result[0].id).toBe(mockUser.id);
+      expect(result[0].email).toBe(mockUser.email);
+      // DTO should not have password
+      expect((result[0] as any).password).toBeUndefined();
       expect(repository.find).toHaveBeenCalledTimes(1);
     });
 

@@ -7,6 +7,8 @@ import { CreateIpDto } from "./dto/create-ip.dto";
 import { AssignIpDto } from "./dto/assign-ip.dto";
 import { Company } from "src/companies/entities/company.entity";
 import { FindAllIpsDto } from "./dto/find-all-ips.dto";
+import { IpResponseDto } from "./dto/ip-response.dto";
+import { toIpResponseDto, toIpResponseDtoList } from "./ips.mapper";
 
 @Injectable()
 export class IpsService {
@@ -19,7 +21,7 @@ export class IpsService {
     private readonly companyRepository: Repository<Company>,
   ) {}
 
-  async findAll(findAllIpsDto: FindAllIpsDto): Promise<Ip[]> {
+  async findAll(findAllIpsDto: FindAllIpsDto): Promise<IpResponseDto[]> {
     const { status, companyName, roomNumber } = findAllIpsDto;
 
     const queryBuilder = this.ipRepository.createQueryBuilder('ip');
@@ -34,6 +36,7 @@ export class IpsService {
         'ip.address',
         'ip.status',
         'ip.macAddress',
+        'ip.expiresAt',
         // Campos do Room
         'room.id',
         'room.number',
@@ -58,10 +61,11 @@ export class IpsService {
       queryBuilder.andWhere('room.number = :roomNumber', { roomNumber });
     }
 
-    return queryBuilder.getMany();
+    const ips = await queryBuilder.getMany();
+    return toIpResponseDtoList(ips);
   }
 
-  async bulkCreate(roomId: string, createIpDtos: CreateIpDto[]): Promise<Ip[]> {
+  async bulkCreate(roomId: string, createIpDtos: CreateIpDto[]): Promise<IpResponseDto[]> {
     const room = await this.roomRepository.findOneBy({ id: roomId });
     if (!room) {
       throw new NotFoundException(`Sala com ID "${roomId}" nao encontrada`);
@@ -74,10 +78,16 @@ export class IpsService {
       }),
     );
 
-    return this.ipRepository.save(ipsToSave);
+    const savedIps = await this.ipRepository.save(ipsToSave);
+    // Buscar IPs com relacoes para o DTO
+    const ipsWithRelations = await this.ipRepository.find({
+      where: savedIps.map(ip => ({ id: ip.id })),
+      relations: ['room', 'company', 'company.user'],
+    });
+    return toIpResponseDtoList(ipsWithRelations);
   }
 
-  async assign(ipId: string, assignIpDto: AssignIpDto): Promise<Ip> {
+  async assign(ipId: string, assignIpDto: AssignIpDto): Promise<IpResponseDto> {
     const { macAddress, companyId } = assignIpDto;
 
     // 1. Encontra o IP e sua sala
@@ -97,7 +107,7 @@ export class IpsService {
     // 3. Encontra a empresa e sua sala
     const company = await this.companyRepository.findOne({
       where: { id: companyId },
-      relations: ['room'],
+      relations: ['room', 'user'],
     });
     if (!company) {
       throw new NotFoundException(`Empresa com ID "${companyId}" nao encontrada`);
@@ -114,10 +124,16 @@ export class IpsService {
     ip.company = company;
     ip.assignedAt = new Date();
 
-    return this.ipRepository.save(ip);
+    const savedIp = await this.ipRepository.save(ip);
+    // Buscar IP com relacoes completas para o DTO
+    const ipWithRelations = await this.ipRepository.findOne({
+      where: { id: savedIp.id },
+      relations: ['room', 'company', 'company.user'],
+    });
+    return toIpResponseDto(ipWithRelations!);
   }
 
-  async unassign(ipId: string): Promise<Ip> {
+  async unassign(ipId: string): Promise<IpResponseDto> {
     const ip = await this.ipRepository.findOneBy({ id: ipId });
     if (!ip) {
       throw new NotFoundException(`IP com ID "${ipId}" nao encontrado`);
@@ -134,6 +150,12 @@ export class IpsService {
     ip.expiresAt = undefined as any;
     ip.isTemporary = false;
 
-    return this.ipRepository.save(ip);
+    const savedIp = await this.ipRepository.save(ip);
+    // Buscar IP com relacoes para o DTO
+    const ipWithRelations = await this.ipRepository.findOne({
+      where: { id: savedIp.id },
+      relations: ['room', 'company', 'company.user'],
+    });
+    return toIpResponseDto(ipWithRelations!);
   }
 }

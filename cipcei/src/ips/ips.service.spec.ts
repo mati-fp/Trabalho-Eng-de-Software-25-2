@@ -44,6 +44,7 @@ describe('IpsService', () => {
           useValue: {
             create: jest.fn(),
             save: jest.fn(),
+            find: jest.fn(),
             findOne: jest.fn(),
             findOneBy: jest.fn(),
             createQueryBuilder: jest.fn(),
@@ -79,7 +80,7 @@ describe('IpsService', () => {
   });
 
   describe('findAll', () => {
-    it('should return all IPs with filters', async () => {
+    it('should return all IPs as DTOs with filters', async () => {
       const mockQueryBuilder = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
@@ -95,7 +96,11 @@ describe('IpsService', () => {
 
       const result = await service.findAll(filters);
 
-      expect(result).toEqual([mockIp]);
+      // Verifica DTO
+      expect(result.length).toBe(1);
+      expect(result[0].id).toBe(mockIp.id);
+      expect(result[0].address).toBe(mockIp.address);
+      expect(result[0].status).toBe(mockIp.status);
       expect(mockQueryBuilder.andWhere).toHaveBeenCalled();
     });
 
@@ -124,13 +129,18 @@ describe('IpsService', () => {
       { address: '10.0.0.101' },
     ];
 
-    it('should successfully create multiple IPs', async () => {
+    it('should successfully create multiple IPs and return DTOs', async () => {
       roomRepository.findOneBy.mockResolvedValue(mockRoom as any);
       ipRepository.create.mockImplementation((data: any) => ({ ...mockIp, ...data }));
       ipRepository.save.mockResolvedValue([mockIp, mockIp] as any);
+      ipRepository.find.mockResolvedValue([mockIp, mockIp] as any);
 
       const result = await service.bulkCreate(mockRoom.id, createIpDtos);
 
+      // Verifica DTOs
+      expect(result.length).toBe(2);
+      expect(result[0].id).toBe(mockIp.id);
+      expect(result[0].address).toBe(mockIp.address);
       expect(roomRepository.findOneBy).toHaveBeenCalledWith({ id: mockRoom.id });
       expect(ipRepository.create).toHaveBeenCalledTimes(2);
       expect(ipRepository.save).toHaveBeenCalled();
@@ -151,11 +161,16 @@ describe('IpsService', () => {
       companyId: mockCompany.id,
     };
 
-    it('should successfully assign IP to company', async () => {
+    it('should successfully assign IP to company and return DTO', async () => {
       const ipWithRoom = { ...mockIp, room: mockRoom };
-      ipRepository.findOne.mockResolvedValue(ipWithRoom as any);
+      const assignedIp = { ...ipWithRoom, status: IpStatus.IN_USE, macAddress: assignIpDto.macAddress, company: mockCompany };
+
+      // Primeiro findOne para buscar IP inicial, segundo após save para DTO
+      ipRepository.findOne
+        .mockResolvedValueOnce(ipWithRoom as any)
+        .mockResolvedValueOnce(assignedIp as any);
       companyRepository.findOne.mockResolvedValue(mockCompany as any);
-      ipRepository.save.mockResolvedValue({ ...ipWithRoom, status: IpStatus.IN_USE, macAddress: assignIpDto.macAddress } as any);
+      ipRepository.save.mockResolvedValue(assignedIp as any);
 
       const result = await service.assign(mockIp.id, assignIpDto);
 
@@ -201,10 +216,13 @@ describe('IpsService', () => {
   });
 
   describe('unassign', () => {
-    it('should successfully unassign IP', async () => {
+    it('should successfully unassign IP and return DTO', async () => {
       const ipInUse = { ...mockIp, status: IpStatus.IN_USE, macAddress: 'AA:BB:CC:DD:EE:FF' };
+      const unassignedIp = { ...mockIp, status: IpStatus.AVAILABLE, macAddress: undefined };
+
       ipRepository.findOneBy.mockResolvedValue(ipInUse as any);
-      ipRepository.save.mockResolvedValue({ ...ipInUse, status: IpStatus.AVAILABLE, macAddress: undefined } as any);
+      ipRepository.save.mockResolvedValue(unassignedIp as any);
+      ipRepository.findOne.mockResolvedValue(unassignedIp as any);
 
       const result = await service.unassign(mockIp.id);
 

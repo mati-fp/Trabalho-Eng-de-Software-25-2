@@ -148,51 +148,56 @@ describe('IpHistoryService', () => {
       expect(result.action).toBe(IpAction.RELEASED);
     });
 
-    it('should create history for REQUEST_APPROVED action', async () => {
+    it('should create history for APPROVED action', async () => {
       const approveData = {
         ip: mockIp as any,
         company: mockCompany as any,
-        action: IpAction.REQUEST_APPROVED,
+        action: IpAction.APPROVED,
         performedBy: mockUser as any,
         notes: 'Request approved by admin',
       };
 
-      repository.create.mockReturnValue({ ...mockHistory, action: IpAction.REQUEST_APPROVED } as any);
-      repository.save.mockResolvedValue({ ...mockHistory, action: IpAction.REQUEST_APPROVED } as any);
+      repository.create.mockReturnValue({ ...mockHistory, action: IpAction.APPROVED } as any);
+      repository.save.mockResolvedValue({ ...mockHistory, action: IpAction.APPROVED } as any);
 
       const result = await service.create(approveData);
 
-      expect(result.action).toBe(IpAction.REQUEST_APPROVED);
+      expect(result.action).toBe(IpAction.APPROVED);
     });
 
-    it('should create history for REQUEST_REJECTED action', async () => {
+    it('should create history for REJECTED action', async () => {
       const rejectData = {
         ip: mockIp as any,
         company: mockCompany as any,
-        action: IpAction.REQUEST_REJECTED,
+        action: IpAction.REJECTED,
         performedBy: mockUser as any,
         notes: 'Insufficient justification',
       };
 
-      repository.create.mockReturnValue({ ...mockHistory, action: IpAction.REQUEST_REJECTED } as any);
-      repository.save.mockResolvedValue({ ...mockHistory, action: IpAction.REQUEST_REJECTED } as any);
+      repository.create.mockReturnValue({ ...mockHistory, action: IpAction.REJECTED } as any);
+      repository.save.mockResolvedValue({ ...mockHistory, action: IpAction.REJECTED } as any);
 
       const result = await service.create(rejectData);
 
-      expect(result.action).toBe(IpAction.REQUEST_REJECTED);
+      expect(result.action).toBe(IpAction.REJECTED);
     });
   });
 
   describe('findByIp', () => {
-    it('should return history for specific IP ordered by date DESC', async () => {
+    it('should return history as DTOs for specific IP ordered by date DESC', async () => {
       const histories = [mockHistory];
       repository.find.mockResolvedValue(histories as any);
 
       const result = await service.findByIp(mockIp.id);
 
-      expect(result).toEqual(histories);
+      // Verifica DTO
+      expect(result.length).toBe(1);
+      expect(result[0].id).toBe(mockHistory.id);
+      expect(result[0].action).toBe(mockHistory.action);
+      expect(result[0].macAddress).toBe(mockHistory.macAddress);
       expect(repository.find).toHaveBeenCalledWith({
         where: { ip: { id: mockIp.id } },
+        relations: ['ip', 'company', 'company.user', 'performedBy'],
         order: { performedAt: 'DESC' },
       });
     });
@@ -212,21 +217,26 @@ describe('IpHistoryService', () => {
 
       expect(repository.find).toHaveBeenCalledWith({
         where: { ip: { id: 'test-ip-id' } },
+        relations: ['ip', 'company', 'company.user', 'performedBy'],
         order: { performedAt: 'DESC' },
       });
     });
   });
 
   describe('findByCompany', () => {
-    it('should return history for specific company ordered by date DESC', async () => {
+    it('should return history as DTOs for specific company ordered by date DESC', async () => {
       const histories = [mockHistory];
       repository.find.mockResolvedValue(histories as any);
 
       const result = await service.findByCompany(mockCompany.id);
 
-      expect(result).toEqual(histories);
+      // Verifica DTO
+      expect(result.length).toBe(1);
+      expect(result[0].id).toBe(mockHistory.id);
+      expect(result[0].action).toBe(mockHistory.action);
       expect(repository.find).toHaveBeenCalledWith({
         where: { company: { id: mockCompany.id } },
+        relations: ['ip', 'company', 'company.user', 'performedBy'],
         order: { performedAt: 'DESC' },
       });
     });
@@ -246,21 +256,26 @@ describe('IpHistoryService', () => {
 
       expect(repository.find).toHaveBeenCalledWith({
         where: { company: { id: 'test-company-id' } },
+        relations: ['ip', 'company', 'company.user', 'performedBy'],
         order: { performedAt: 'DESC' },
       });
     });
   });
 
   describe('findAll', () => {
-    it('should return all history when no filters provided', async () => {
+    it('should return all history as DTOs when no filters provided', async () => {
       const histories = [mockHistory];
       repository.find.mockResolvedValue(histories as any);
 
       const result = await service.findAll({});
 
-      expect(result).toEqual(histories);
+      // Verifica DTO
+      expect(result.length).toBe(1);
+      expect(result[0].id).toBe(mockHistory.id);
+      expect(result[0].action).toBe(mockHistory.action);
       expect(repository.find).toHaveBeenCalledWith({
         where: {},
+        relations: ['ip', 'company', 'company.user', 'performedBy'],
         order: { performedAt: 'DESC' },
       });
     });
@@ -272,6 +287,7 @@ describe('IpHistoryService', () => {
 
       expect(repository.find).toHaveBeenCalledWith({
         where: { company: { id: mockCompany.id } },
+        relations: ['ip', 'company', 'company.user', 'performedBy'],
         order: { performedAt: 'DESC' },
       });
     });
@@ -283,6 +299,7 @@ describe('IpHistoryService', () => {
 
       expect(repository.find).toHaveBeenCalledWith({
         where: { ip: { id: mockIp.id } },
+        relations: ['ip', 'company', 'company.user', 'performedBy'],
         order: { performedAt: 'DESC' },
       });
     });
@@ -294,6 +311,7 @@ describe('IpHistoryService', () => {
 
       expect(repository.find).toHaveBeenCalledWith({
         where: { action: IpAction.ASSIGNED },
+        relations: ['ip', 'company', 'company.user', 'performedBy'],
         order: { performedAt: 'DESC' },
       });
     });
@@ -309,6 +327,7 @@ describe('IpHistoryService', () => {
         where: {
           performedAt: Between(new Date(startDate), new Date(endDate)),
         },
+        relations: ['ip', 'company', 'company.user', 'performedBy'],
         order: { performedAt: 'DESC' },
       });
     });
@@ -323,6 +342,7 @@ describe('IpHistoryService', () => {
         where: {
           performedAt: Between(new Date(startDate), new Date('2100-12-31')),
         },
+        relations: ['ip', 'company', 'company.user', 'performedBy'],
         order: { performedAt: 'DESC' },
       });
     });
@@ -337,6 +357,7 @@ describe('IpHistoryService', () => {
         where: {
           performedAt: Between(new Date('1900-01-01'), new Date(endDate)),
         },
+        relations: ['ip', 'company', 'company.user', 'performedBy'],
         order: { performedAt: 'DESC' },
       });
     });
@@ -357,13 +378,14 @@ describe('IpHistoryService', () => {
           action: IpAction.ASSIGNED,
           performedAt: Between(new Date('2024-01-01'), new Date('2024-12-31')),
         },
+        relations: ['ip', 'company', 'company.user', 'performedBy'],
         order: { performedAt: 'DESC' },
       });
     });
   });
 
   describe('getIpDetailedHistory', () => {
-    it('should return detailed history for IP address', async () => {
+    it('should return detailed history as DTOs for IP address', async () => {
       const mockQueryBuilder = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
@@ -375,7 +397,11 @@ describe('IpHistoryService', () => {
 
       const result = await service.getIpDetailedHistory('10.0.0.100');
 
-      expect(result).toEqual([mockHistory]);
+      // Verifica DTO
+      expect(result.length).toBe(1);
+      expect(result[0].id).toBe(mockHistory.id);
+      expect(result[0].action).toBe(mockHistory.action);
+      expect(result[0].macAddress).toBe(mockHistory.macAddress);
       expect(repository.createQueryBuilder).toHaveBeenCalledWith('history');
       expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('history.ip', 'ip');
       expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('history.company', 'company');

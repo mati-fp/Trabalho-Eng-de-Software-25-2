@@ -231,18 +231,50 @@ describe('IpsService', () => {
   });
 
   describe('unassign', () => {
-    it('should successfully unassign IP and return DTO', async () => {
-      const ipInUse = { ...mockIp, status: IpStatus.IN_USE, macAddress: 'AA:BB:CC:DD:EE:FF' };
-      const unassignedIp = { ...mockIp, status: IpStatus.AVAILABLE, macAddress: undefined };
+    it('should successfully unassign IP and clear all fields', async () => {
+      const ipInUse = {
+        ...mockIp,
+        status: IpStatus.IN_USE,
+        macAddress: 'AA:BB:CC:DD:EE:FF',
+        userName: 'John Doe',
+        isTemporary: true,
+        assignedAt: new Date(),
+        expiresAt: new Date(),
+        lastRenewedAt: new Date(),
+        company: mockCompany,
+      };
+      const unassignedIp = {
+        ...mockIp,
+        status: IpStatus.AVAILABLE,
+        macAddress: null,
+        userName: null,
+        isTemporary: false,
+        assignedAt: null,
+        expiresAt: null,
+        lastRenewedAt: null,
+        company: null,
+      };
 
       ipRepository.findOneBy.mockResolvedValue(ipInUse as any);
-      ipRepository.save.mockResolvedValue(unassignedIp as any);
+      ipRepository.save.mockImplementation((ip: any) => Promise.resolve(ip));
       ipRepository.findOne.mockResolvedValue(unassignedIp as any);
 
       const result = await service.unassign(mockIp.id);
 
+      // Verifica que save foi chamado com todos os campos resetados
+      expect(ipRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: IpStatus.AVAILABLE,
+          macAddress: null,
+          userName: null,
+          isTemporary: false,
+          assignedAt: null,
+          expiresAt: null,
+          lastRenewedAt: null,
+          company: null,
+        }),
+      );
       expect(result.status).toBe(IpStatus.AVAILABLE);
-      expect(result.macAddress).toBeUndefined();
     });
 
     it('should throw NotFoundException when IP does not exist', async () => {

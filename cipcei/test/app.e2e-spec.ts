@@ -7,6 +7,7 @@ import { TypeOrmModule, getDataSourceToken } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { JwtService, JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { ThrottlerModule } from '@nestjs/throttler';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { newDb, DataType } = require('pg-mem');
 
@@ -119,6 +120,13 @@ describe('CIPCEI Backend E2E Tests', () => {
           secret: 'test-jwt-secret-key-for-e2e-testing',
           signOptions: { expiresIn: '1h' },
         }),
+        ThrottlerModule.forRoot([
+          {
+            name: 'login',
+            ttl: 60000,
+            limit: 5,
+          },
+        ]),
         AuthModule,
         UsersModule,
         CompaniesModule,

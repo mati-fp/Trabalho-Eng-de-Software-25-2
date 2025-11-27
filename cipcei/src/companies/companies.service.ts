@@ -137,16 +137,18 @@ export class CompaniesService {
       if (ipsToRelease.length > 0) {
         const ipIdsToRelease = ipsToRelease.map(ip => ip.id);
 
+        // Resetar todos os campos para valores default (consistente com IpsService.unassign)
         await transactionalEntityManager.update(Ip,
           { id: In(ipIdsToRelease) },
           {
             status: IpStatus.AVAILABLE,
-            company: undefined as any, // Remove associação com a empresa
-            macAddress: undefined,
-            userName: undefined,
-            assignedAt: undefined,
-            expiresAt: undefined,
+            company: null as any,
+            macAddress: null as any,
+            userName: null as any,
             isTemporary: false,
+            assignedAt: null as any,
+            expiresAt: null as any,
+            lastRenewedAt: null as any,
           }
         );
       }

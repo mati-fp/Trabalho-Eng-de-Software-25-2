@@ -314,7 +314,7 @@ describe('CompaniesService', () => {
       });
     });
 
-    it('should release IPs when removing company', async () => {
+    it('should release IPs and reset all fields when removing company', async () => {
       const mockIpsToRelease = [{ id: 'ip-1' }, { id: 'ip-2' }];
 
       (dataSource.transaction as jest.Mock).mockImplementation(async (callback: any) => {
@@ -329,7 +329,7 @@ describe('CompaniesService', () => {
 
       await service.remove(mockCompany.id);
 
-      // Verifica que busca IPs da EMPRESA (não da sala) - correção para múltiplas empresas por sala
+      // Verifica que busca IPs da EMPRESA (nao da sala) - correcao para multiplas empresas por sala
       expect(mockEntityManager.find).toHaveBeenCalledWith(Ip, {
         select: ['id'],
         where: {
@@ -338,17 +338,19 @@ describe('CompaniesService', () => {
         },
       });
 
+      // Verifica que todos os campos sao resetados (consistente com IpsService.unassign)
       expect(mockEntityManager.update).toHaveBeenCalledWith(
         Ip,
         { id: expect.anything() },
         {
           status: IpStatus.AVAILABLE,
-          company: undefined,
-          macAddress: undefined,
-          userName: undefined,
-          assignedAt: undefined,
-          expiresAt: undefined,
+          company: null,
+          macAddress: null,
+          userName: null,
           isTemporary: false,
+          assignedAt: null,
+          expiresAt: null,
+          lastRenewedAt: null,
         },
       );
     });

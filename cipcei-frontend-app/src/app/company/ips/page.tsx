@@ -36,7 +36,6 @@ export default function IpsPage() {
 
   // Filter states
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [filterExpiredIps, setFilterExpiredIps] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Sorting states
@@ -56,13 +55,9 @@ export default function IpsPage() {
 
         const params: FindAllIpsParams = {};
 
-        if (statusFilter === "expired") {
-          setFilterExpiredIps(true);
-        }
-        if (!["expired", "all"].includes(statusFilter)) {
+        if (statusFilter !== "all") {
           params.status = statusFilter as IpStatus;
         }
-
         const data = await CompaniesAPI.getMyIps({});
         setIps(data);
         setFilteredIps(data);
@@ -87,9 +82,6 @@ export default function IpsPage() {
         ip.address.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    if (filterExpiredIps) {
-      result = result.filter((ip) => isIpExpired(ip.expiresAt));
-    }
 
     // Apply sorting
     result.sort((a, b) => {
@@ -106,7 +98,7 @@ export default function IpsPage() {
 
     setFilteredIps(result);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [ips, searchQuery, sortField, sortOrder, filterExpiredIps]);
+  }, [ips, searchQuery, sortField, sortOrder]);
 
   // Pagination
   const totalPages = Math.ceil(filteredIps.length / itemsPerPage);
@@ -161,7 +153,6 @@ export default function IpsPage() {
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="available">Disponível</SelectItem>
                 <SelectItem value="in_use">Alocado</SelectItem>
-                <SelectItem value="expired">Expirado</SelectItem>
               </SelectContent>
             </Select>
           </div>

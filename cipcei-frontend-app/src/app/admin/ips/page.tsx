@@ -197,7 +197,6 @@ export default function AdminIpsPage() {
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="available">Disponível</SelectItem>
                 <SelectItem value="in_use">Alocado</SelectItem>
-                <SelectItem value="expired">Expirado</SelectItem>
               </SelectContent>
             </Select>
           </div>

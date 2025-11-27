@@ -80,7 +80,7 @@ describe('IpsService', () => {
   });
 
   describe('findAll', () => {
-    it('should return all IPs as DTOs with filters', async () => {
+    it('should return IPs as DTOs with filters', async () => {
       const mockQueryBuilder = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
@@ -96,7 +96,7 @@ describe('IpsService', () => {
 
       const result = await service.findAll(filters);
 
-      // Verifica DTO
+      // Verifica retorno como array
       expect(result.length).toBe(1);
       expect(result[0].id).toBe(mockIp.id);
       expect(result[0].address).toBe(mockIp.address);
@@ -120,6 +120,21 @@ describe('IpsService', () => {
         expect.stringContaining('LOWER(user.name)'),
         expect.objectContaining({ companyName: '%Test Company%' }),
       );
+    });
+
+    it('should return empty array when no IPs match', async () => {
+      const mockQueryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+
+      ipRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+
+      const result = await service.findAll({});
+
+      expect(result).toEqual([]);
     });
   });
 

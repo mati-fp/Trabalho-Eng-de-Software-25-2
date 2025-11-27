@@ -1,8 +1,9 @@
 import { IsOptional, IsString, IsDateString, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IpAction } from '../entities/ip-history.entity';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
-export class FindIpHistoryDto {
+export class FindIpHistoryDto extends PaginationDto {
   @ApiProperty({ description: 'ID da empresa', required: false })
   @IsOptional()
   @IsString()

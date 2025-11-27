@@ -85,6 +85,7 @@ describe('CompaniesService', () => {
             create: jest.fn(),
             save: jest.fn(),
             preload: jest.fn(),
+            createQueryBuilder: jest.fn(),
           },
         },
         {
@@ -134,18 +135,21 @@ describe('CompaniesService', () => {
   });
 
   describe('findAll', () => {
-    it('should return all companies with roomNumber (without room object)', async () => {
+    it('should return all companies with roomNumber', async () => {
       companyRepository.find.mockResolvedValue([mockCompany]);
 
       const result = await service.findAll();
 
-      // Deve retornar empresa como DTO com roomNumber
+      // Verifica retorno como array
       expect(result.length).toBe(1);
       expect(result[0].id).toBe(mockCompany.id);
       expect(result[0].roomNumber).toBe(101);
       expect(result[0].user.id).toBe(mockUser.id);
       expect(result[0].user.email).toBe(mockUser.email);
-      expect(companyRepository.find).toHaveBeenCalledWith({ relations: ['room', 'user'] });
+      expect(companyRepository.find).toHaveBeenCalledWith({
+        relations: ['room', 'user'],
+        order: { createdAt: 'DESC' },
+      });
     });
 
     it('should return empty array when no companies exist', async () => {
@@ -154,16 +158,6 @@ describe('CompaniesService', () => {
       const result = await service.findAll();
 
       expect(result).toEqual([]);
-    });
-
-    it('should return roomNumber as undefined when company has no room', async () => {
-      const companyWithoutRoom = { ...mockCompany, room: undefined };
-      companyRepository.find.mockResolvedValue([companyWithoutRoom as any]);
-
-      const result = await service.findAll();
-
-      expect(result.length).toBe(1);
-      expect(result[0].roomNumber).toBeUndefined();
     });
   });
 

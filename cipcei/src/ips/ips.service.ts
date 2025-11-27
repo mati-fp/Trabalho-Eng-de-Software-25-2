@@ -40,7 +40,7 @@ export class IpsService {
         // Campos do Room
         'room.id',
         'room.number',
-        // Campos da Company (atribuída ao IP)
+        // Campos da Company (atribuida ao IP)
         'company.id',
         // Campos do User
         'user.name',

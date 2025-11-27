@@ -33,8 +33,7 @@ export class User {
   @Column({ default: true })
   isActive: boolean;
 
-  @OneToOne(() => Company, { nullable: true }) // Um usuário admin não tem empresa associada
-  @JoinColumn()
+  @OneToOne(() => Company, (company) => company.user, { nullable: true }) // Um usuário admin não tem empresa associada
   company: Company;
 
   @CreateDateColumn()

@@ -17,6 +17,7 @@ import { ApproveIpRequestDto } from './dto/approve-ip-request.dto';
 import { RejectIpRequestDto } from './dto/reject-ip-request.dto';
 import { IpRequestResponseDto } from './dto/ip-request-response.dto';
 import { toIpRequestResponseDto, toIpRequestResponseDtoList } from './ip-requests.mapper';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class IpRequestsService {
@@ -28,8 +29,9 @@ export class IpRequestsService {
     @InjectRepository(Company)
     private companyRepository: Repository<Company>,
     private ipHistoryService: IpHistoryService,
+    private mailService: MailService,
     private dataSource: DataSource,
-  ) {}
+  ) { }
 
   /**
    * UC3: Empresa solicita novo IP
@@ -112,6 +114,15 @@ export class IpRequestsService {
       where: { id: savedRequest.id },
       relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
     });
+
+    // Enviar email de confirmação
+    if (requestWithRelations && requestWithRelations.requestedBy) {
+      await this.mailService.sendRequestConfirmation(
+        requestWithRelations.requestedBy,
+        requestWithRelations,
+      );
+    }
+
     return toIpRequestResponseDto(requestWithRelations!);
   }
 
@@ -148,7 +159,10 @@ export class IpRequestsService {
         relations: ['room', 'user'],
       });
 
+      console.log('Company with room:', companyWithRoom);
+
       if (!companyWithRoom || !companyWithRoom.room) {
+        console.log('Error: Empresa não possui sala associada');
         throw new BadRequestException('Empresa não possui sala associada');
       }
 
@@ -291,6 +305,15 @@ export class IpRequestsService {
         where: { id: savedRequest.id },
         relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
       });
+
+      // Enviar email de aprovação
+      if (requestWithRelations && requestWithRelations.requestedBy) {
+        await this.mailService.sendRequestApproval(
+          requestWithRelations.requestedBy,
+          requestWithRelations,
+        );
+      }
+
       return toIpRequestResponseDto(requestWithRelations!);
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -344,6 +367,16 @@ export class IpRequestsService {
       where: { id: savedRequest.id },
       relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
     });
+
+    // Enviar email de rejeição
+    if (requestWithRelations && requestWithRelations.requestedBy) {
+      await this.mailService.sendRequestRejection(
+        requestWithRelations.requestedBy,
+        requestWithRelations,
+        rejectDto.rejectionReason,
+      );
+    }
+
     return toIpRequestResponseDto(requestWithRelations!);
   }
 
@@ -379,6 +412,15 @@ export class IpRequestsService {
       where: { id: savedRequest.id },
       relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
     });
+
+    // Enviar email de confirmação (mesmo para cancelamento)
+    if (requestWithRelations && requestWithRelations.requestedBy) {
+      await this.mailService.sendRequestConfirmation(
+        requestWithRelations.requestedBy,
+        requestWithRelations,
+      );
+    }
+
     return toIpRequestResponseDto(requestWithRelations!);
   }
 

@@ -19,7 +19,7 @@ export class IpsService {
     private readonly roomRepository: Repository<Room>,
     @InjectRepository(Company)
     private readonly companyRepository: Repository<Company>,
-  ) {}
+  ) { }
 
   async findAll(findAllIpsDto: FindAllIpsDto): Promise<IpResponseDto[]> {
     const { status, companyName, roomNumber } = findAllIpsDto;
@@ -114,7 +114,11 @@ export class IpsService {
     }
 
     // 4. Valida se a sala do IP e da empresa sao a mesma
+    console.log('IP Room:', ip.room);
+    console.log('Company Room:', company.room);
+
     if (!ip.room || !company.room || ip.room.id !== company.room.id) {
+      console.log('Error: Endereco IP nao pertence a sala da empresa');
       throw new BadRequestException('Endereco IP nao pertence a sala da empresa');
     }
 

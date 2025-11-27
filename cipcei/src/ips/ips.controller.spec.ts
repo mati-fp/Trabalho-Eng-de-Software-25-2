@@ -4,6 +4,7 @@ import { IpsService } from './ips.service';
 import { IpStatus } from './entities/ip.entity';
 import { AssignIpDto } from './dto/assign-ip.dto';
 import { FindAllIpsDto } from './dto/find-all-ips.dto';
+import { UserRole } from '../users/entities/user.entity';
 
 describe('IpsController', () => {
   let controller: IpsController;
@@ -18,6 +19,17 @@ describe('IpsController', () => {
       id: 'room-uuid-123',
       number: 101,
     },
+  };
+
+  const mockAdminUser = {
+    id: 'admin-uuid-999',
+    email: 'admin@cei.ufrgs.br',
+    name: 'Admin User',
+    role: UserRole.ADMIN,
+  };
+
+  const mockRequest = {
+    user: mockAdminUser,
   };
 
   beforeEach(async () => {
@@ -57,28 +69,28 @@ describe('IpsController', () => {
       const assignedIp = { ...mockIp, status: IpStatus.IN_USE, macAddress: assignIpDto.macAddress };
       ipsService.assign.mockResolvedValue(assignedIp as any);
 
-      const result = await controller.assign(mockIp.id, assignIpDto);
+      const result = await controller.assign(mockIp.id, assignIpDto, mockRequest);
 
       expect(result).toEqual(assignedIp);
-      expect(ipsService.assign).toHaveBeenCalledWith(mockIp.id, assignIpDto);
+      expect(ipsService.assign).toHaveBeenCalledWith(mockIp.id, assignIpDto, mockAdminUser);
     });
 
     it('should call ipsService.assign with correct parameters', async () => {
       ipsService.assign.mockResolvedValue(mockIp as any);
 
-      await controller.assign('test-ip-id', assignIpDto);
+      await controller.assign('test-ip-id', assignIpDto, mockRequest);
 
       expect(ipsService.assign).toHaveBeenCalledWith('test-ip-id', {
         macAddress: assignIpDto.macAddress,
         companyId: assignIpDto.companyId,
-      });
+      }, mockAdminUser);
     });
 
     it('should propagate errors from ipsService', async () => {
       const error = new Error('IP not found');
       ipsService.assign.mockRejectedValue(error);
 
-      await expect(controller.assign(mockIp.id, assignIpDto)).rejects.toThrow('IP not found');
+      await expect(controller.assign(mockIp.id, assignIpDto, mockRequest)).rejects.toThrow('IP not found');
     });
   });
 
@@ -147,18 +159,18 @@ describe('IpsController', () => {
       const unassignedIp = { ...mockIp, status: IpStatus.AVAILABLE, macAddress: '' };
       ipsService.unassign.mockResolvedValue(unassignedIp as any);
 
-      const result = await controller.unassign(mockIp.id);
+      const result = await controller.unassign(mockIp.id, mockRequest);
 
       expect(result).toEqual(unassignedIp);
-      expect(ipsService.unassign).toHaveBeenCalledWith(mockIp.id);
+      expect(ipsService.unassign).toHaveBeenCalledWith(mockIp.id, mockAdminUser);
     });
 
     it('should call ipsService.unassign with correct IP ID', async () => {
       ipsService.unassign.mockResolvedValue(mockIp as any);
 
-      await controller.unassign('test-ip-id');
+      await controller.unassign('test-ip-id', mockRequest);
 
-      expect(ipsService.unassign).toHaveBeenCalledWith('test-ip-id');
+      expect(ipsService.unassign).toHaveBeenCalledWith('test-ip-id', mockAdminUser);
       expect(ipsService.unassign).toHaveBeenCalledTimes(1);
     });
 
@@ -166,7 +178,7 @@ describe('IpsController', () => {
       const error = new Error('IP not found');
       ipsService.unassign.mockRejectedValue(error);
 
-      await expect(controller.unassign('invalid-id')).rejects.toThrow('IP not found');
+      await expect(controller.unassign('invalid-id', mockRequest)).rejects.toThrow('IP not found');
     });
   });
 });

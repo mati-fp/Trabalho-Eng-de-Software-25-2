@@ -141,14 +141,20 @@ describe('IpRequestsService', () => {
       userName: 'Test User',
     };
 
-    it('should successfully create a NEW IP request', async () => {
+    it('should successfully create a NEW IP request and return DTO', async () => {
+      const requestWithRelations = { ...mockRequest, company: { ...mockCompany, user: mockUser, room: mockRoom } };
+
       companyRepository.findOne.mockResolvedValue(mockCompany as any);
       ipRequestRepository.create.mockReturnValue(mockRequest as any);
       ipRequestRepository.save.mockResolvedValue(mockRequest as any);
+      ipRequestRepository.findOne.mockResolvedValue(requestWithRelations as any);
 
       const result = await service.create(createDto, mockUser as any);
 
-      expect(result).toEqual(mockRequest);
+      // Verifica DTO
+      expect(result.id).toBe(mockRequest.id);
+      expect(result.requestType).toBe(mockRequest.requestType);
+      expect(result.status).toBe(mockRequest.status);
       expect(companyRepository.findOne).toHaveBeenCalled();
       expect(ipRequestRepository.create).toHaveBeenCalled();
       expect(ipRequestRepository.save).toHaveBeenCalled();
@@ -182,20 +188,23 @@ describe('IpRequestsService', () => {
       );
     });
 
-    it('should create RENEWAL request with valid IP', async () => {
+    it('should create RENEWAL request with valid IP and return DTO', async () => {
       const renewalDto = {
         ...createDto,
         requestType: IpRequestType.RENEWAL,
         ipId: mockIp.id,
       };
+      const requestWithRelations = { ...mockRequest, company: { ...mockCompany, user: mockUser, room: mockRoom } };
+
       companyRepository.findOne.mockResolvedValue(mockCompany as any);
       ipRepository.findOne.mockResolvedValue({ ...mockIp, company: mockCompany } as any);
       ipRequestRepository.create.mockReturnValue(mockRequest as any);
       ipRequestRepository.save.mockResolvedValue(mockRequest as any);
+      ipRequestRepository.findOne.mockResolvedValue(requestWithRelations as any);
 
       const result = await service.create(renewalDto, mockUser as any);
 
-      expect(result).toEqual(mockRequest);
+      expect(result.id).toBe(mockRequest.id);
       expect(ipHistoryService.create).toHaveBeenCalled();
     });
 
@@ -240,16 +249,20 @@ describe('IpRequestsService', () => {
       );
     });
 
-    it('should create CANCELLATION request with valid IP', async () => {
+    it('should create CANCELLATION request with valid IP and return DTO', async () => {
       const cancellationDto = {
         ...createDto,
         requestType: IpRequestType.CANCELLATION,
         ipId: mockIp.id,
       };
+      const cancellationRequest = { ...mockRequest, requestType: IpRequestType.CANCELLATION };
+      const requestWithRelations = { ...cancellationRequest, company: { ...mockCompany, user: mockUser, room: mockRoom } };
+
       companyRepository.findOne.mockResolvedValue(mockCompany as any);
       ipRepository.findOne.mockResolvedValue({ ...mockIp, company: mockCompany } as any);
-      ipRequestRepository.create.mockReturnValue({ ...mockRequest, requestType: IpRequestType.CANCELLATION } as any);
-      ipRequestRepository.save.mockResolvedValue({ ...mockRequest, requestType: IpRequestType.CANCELLATION } as any);
+      ipRequestRepository.create.mockReturnValue(cancellationRequest as any);
+      ipRequestRepository.save.mockResolvedValue(cancellationRequest as any);
+      ipRequestRepository.findOne.mockResolvedValue(requestWithRelations as any);
 
       const result = await service.create(cancellationDto, mockUser as any);
 
@@ -266,6 +279,7 @@ describe('IpRequestsService', () => {
     it('should approve NEW IP request and assign available IP', async () => {
       const request = { ...mockRequest, company: { ...mockCompany, room: mockRoom } };
       ipRequestRepository.findOne.mockResolvedValue(request as any);
+      companyRepository.findOne.mockResolvedValue({ ...mockCompany, room: mockRoom } as any);
       ipRepository.findOne.mockResolvedValue(mockIp as any);
       mockManagerSave.mockResolvedValue({} as any);
 
@@ -306,6 +320,7 @@ describe('IpRequestsService', () => {
         expirationDate: new Date(),
       };
       ipRequestRepository.findOne.mockResolvedValue(renewalRequest as any);
+      companyRepository.findOne.mockResolvedValue({ ...mockCompany, room: mockRoom } as any);
       mockManagerSave.mockResolvedValue({} as any);
 
       await service.approve(mockRequest.id, approveDto, mockAdmin as any);
@@ -322,6 +337,7 @@ describe('IpRequestsService', () => {
         company: { ...mockCompany, room: mockRoom },
       };
       ipRequestRepository.findOne.mockResolvedValue(cancellationRequest as any);
+      companyRepository.findOne.mockResolvedValue({ ...mockCompany, room: mockRoom } as any);
       mockManagerSave.mockResolvedValue({} as any);
 
       await service.approve(mockRequest.id, approveDto, mockAdmin as any);
@@ -413,56 +429,69 @@ describe('IpRequestsService', () => {
   });
 
   describe('findAll', () => {
-    it('should return all requests ordered by date DESC', async () => {
-      const requests = [mockRequest];
-      ipRequestRepository.find.mockResolvedValue(requests as any);
+    it('should return all requests as DTOs ordered by date DESC', async () => {
+      const requestsWithRelations = [{ ...mockRequest, company: { ...mockCompany, user: mockUser, room: mockRoom } }];
+      ipRequestRepository.find.mockResolvedValue(requestsWithRelations as any);
 
       const result = await service.findAll();
 
-      expect(result).toEqual(requests);
+      // Verifica DTO
+      expect(result.length).toBe(1);
+      expect(result[0].id).toBe(mockRequest.id);
+      expect(result[0].requestType).toBe(mockRequest.requestType);
       expect(ipRequestRepository.find).toHaveBeenCalledWith({
+        relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
         order: { requestDate: 'DESC' },
       });
     });
   });
 
   describe('findPending', () => {
-    it('should return only pending requests ordered by date ASC', async () => {
-      const pendingRequests = [mockRequest];
-      ipRequestRepository.find.mockResolvedValue(pendingRequests as any);
+    it('should return only pending requests as DTOs ordered by date ASC', async () => {
+      const requestsWithRelations = [{ ...mockRequest, company: { ...mockCompany, user: mockUser, room: mockRoom } }];
+      ipRequestRepository.find.mockResolvedValue(requestsWithRelations as any);
 
       const result = await service.findPending();
 
-      expect(result).toEqual(pendingRequests);
+      // Verifica DTO
+      expect(result.length).toBe(1);
+      expect(result[0].id).toBe(mockRequest.id);
       expect(ipRequestRepository.find).toHaveBeenCalledWith({
         where: { status: IpRequestStatus.PENDING },
+        relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
         order: { requestDate: 'ASC' },
       });
     });
   });
 
   describe('findByCompany', () => {
-    it('should return requests for specific company', async () => {
-      const companyRequests = [mockRequest];
-      ipRequestRepository.find.mockResolvedValue(companyRequests as any);
+    it('should return requests as DTOs for specific company', async () => {
+      const requestsWithRelations = [{ ...mockRequest, company: { ...mockCompany, user: mockUser, room: mockRoom } }];
+      ipRequestRepository.find.mockResolvedValue(requestsWithRelations as any);
 
       const result = await service.findByCompany(mockCompany.id);
 
-      expect(result).toEqual(companyRequests);
+      // Verifica DTO
+      expect(result.length).toBe(1);
+      expect(result[0].id).toBe(mockRequest.id);
       expect(ipRequestRepository.find).toHaveBeenCalledWith({
         where: { company: { id: mockCompany.id } },
+        relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
         order: { requestDate: 'DESC' },
       });
     });
   });
 
   describe('findOne', () => {
-    it('should return a specific request', async () => {
-      ipRequestRepository.findOne.mockResolvedValue(mockRequest as any);
+    it('should return a specific request as DTO', async () => {
+      const requestWithRelations = { ...mockRequest, company: { ...mockCompany, user: mockUser, room: mockRoom } };
+      ipRequestRepository.findOne.mockResolvedValue(requestWithRelations as any);
 
       const result = await service.findOne(mockRequest.id);
 
-      expect(result).toEqual(mockRequest);
+      // Verifica DTO
+      expect(result.id).toBe(mockRequest.id);
+      expect(result.requestType).toBe(mockRequest.requestType);
     });
 
     it('should throw NotFoundException when request not found', async () => {

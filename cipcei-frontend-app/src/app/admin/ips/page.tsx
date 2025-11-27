@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { findAllIps, FindAllIpsParams } from "@/infra/ips";
-import { IP } from "@/types";
+import { IpsAPI, FindAllIpsParams } from "@/infra/ips";
+import { IP, IpStatus } from "@/types";
 import {
   Table,
   TableBody,
@@ -21,11 +21,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import IpActionsButton from "./components/IpActionsButton";
+import { getIpStatusBadge, isIpExpired } from "@/components/ui/table-badge";
+import { formatDate } from "@/lib/utils";
 
 type SortField = "address" | "status";
 type SortOrder = "asc" | "desc";
 
-export default function IpsPage() {
+export default function AdminIpsPage() {
   const [ips, setIps] = useState<IP[]>([]);
   const [filteredIps, setFilteredIps] = useState<IP[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +36,7 @@ export default function IpsPage() {
 
   // Filter states
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [companyIdFilter, setCompanyIdFilter] = useState<string>("");
+  const [companyNameFilter, setCompanyNameFilter] = useState<string>("");
   const [roomNumberFilter, setRoomNumberFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -45,6 +48,7 @@ export default function IpsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+
   // Fetch IPs from API
   useEffect(() => {
     const fetchIps = async () => {
@@ -55,18 +59,18 @@ export default function IpsPage() {
         const params: FindAllIpsParams = {};
 
         if (statusFilter !== "all") {
-          params.status = statusFilter as "available" | "in_use";
+          params.status = statusFilter as IpStatus;
         }
 
-        if (companyIdFilter.trim()) {
-          params.companyId = companyIdFilter.trim();
+        if (companyNameFilter.trim()) {
+          params.companyName = companyNameFilter.trim();
         }
 
         if (roomNumberFilter.trim()) {
           params.roomNumber = parseInt(roomNumberFilter.trim());
         }
 
-        const data = await findAllIps(params);
+        const data = await IpsAPI.findAllIps(params);
         setIps(data);
         setFilteredIps(data);
       } catch (err) {
@@ -78,7 +82,7 @@ export default function IpsPage() {
     };
 
     fetchIps();
-  }, [statusFilter, companyIdFilter, roomNumberFilter]);
+  }, [statusFilter, companyNameFilter, roomNumberFilter]);
 
   // Apply local search and sorting
   useEffect(() => {
@@ -89,6 +93,11 @@ export default function IpsPage() {
       result = result.filter((ip) =>
         ip.address.toLowerCase().includes(searchQuery.toLowerCase())
       );
+    }
+
+    // Apply expired filter locally (in case backend doesn't handle it)
+    if (statusFilter === "expired") {
+      result = result.filter((ip) => isIpExpired(ip.expiresAt) || ip.status === "expired");
     }
 
     // Apply sorting
@@ -106,7 +115,7 @@ export default function IpsPage() {
 
     setFilteredIps(result);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [ips, searchQuery, sortField, sortOrder]);
+  }, [ips, searchQuery, sortField, sortOrder, statusFilter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredIps.length / itemsPerPage);
@@ -117,7 +126,7 @@ export default function IpsPage() {
   // Clear all filters
   const handleClearFilters = () => {
     setStatusFilter("all");
-    setCompanyIdFilter("");
+    setCompanyNameFilter("");
     setRoomNumberFilter("");
     setSearchQuery("");
   };
@@ -132,21 +141,31 @@ export default function IpsPage() {
     }
   };
 
-  // Get status badge variant
-  const getStatusBadge = (status: string) => {
-    if (status === "available") {
-      return (
-        <Badge variant="default" className="bg-secondary text-primary-foreground">
-          Disponível
-        </Badge>
-      );
+  // Refresh IPs list after action
+  const handleRefreshIps = async () => {
+    try {
+      const params: FindAllIpsParams = {};
+
+      if (statusFilter !== "all") {
+        params.status = statusFilter as IpStatus;
+      }
+
+      if (companyNameFilter.trim()) {
+        params.companyName = companyNameFilter.trim();
+      }
+
+      if (roomNumberFilter.trim()) {
+        params.roomNumber = parseInt(roomNumberFilter.trim());
+      }
+
+      const data = await IpsAPI.findAllIps(params);
+      setIps(data);
+      setFilteredIps(data);
+    } catch (err) {
+      console.error("Error refreshing IPs:", err);
     }
-    return (
-      <Badge variant="secondary" className="bg-primary text-secondary-foreground">
-        Alocado
-      </Badge>
-    );
   };
+
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -171,26 +190,27 @@ export default function IpsPage() {
               Status
             </label>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Selecione o status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="available">Disponível</SelectItem>
                 <SelectItem value="in_use">Alocado</SelectItem>
+                <SelectItem value="expired">Expirado</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Company ID Filter */}
+          {/* Company Name Filter */}
           <div>
             <label className="block text-sm font-medium mb-2 text-muted-foreground">
-              ID da Empresa
+              Nome da Empresa
             </label>
             <Input
-              placeholder="UUID da empresa"
-              value={companyIdFilter}
-              onChange={(e) => setCompanyIdFilter(e.target.value)}
+              placeholder="Nome da empresa"
+              value={companyNameFilter}
+              onChange={(e) => setCompanyNameFilter(e.target.value)}
             />
           </div>
 
@@ -256,7 +276,7 @@ export default function IpsPage() {
                     )}
                   </TableHead>
                   <TableHead
-                    className="cursor-pointer hover:bg-muted/50"
+                    className="cursor-pointer hover:bg-muted/50 text-center"
                     onClick={() => handleSort("status")}
                   >
                     Status
@@ -266,24 +286,44 @@ export default function IpsPage() {
                       </span>
                     )}
                   </TableHead>
-                  <TableHead>Endereço MAC</TableHead>
-                  <TableHead>Sala</TableHead>
+                  <TableHead className="text-center">Endereço MAC</TableHead>
+                  <TableHead className="text-center">Sala</TableHead>
+                  <TableHead className="text-center">Empresa</TableHead>
+                  <TableHead className="text-center">Data de Expiração</TableHead>
+                  <TableHead className="text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {currentIps.map((ip) => (
-                  <TableRow key={ip.id}>
+                  <TableRow
+                    key={ip.id}
+                    className={isIpExpired(ip.expiresAt) ? "bg-red-50 dark:bg-red-950/20" : ""}
+                  >
                     <TableCell className="font-medium">{ip.address}</TableCell>
-                    <TableCell>{getStatusBadge(ip.status)}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">{getIpStatusBadge(ip.status, ip.expiresAt)}</TableCell>
+                    <TableCell className="text-center">
                       {ip.macAddress || (
                         <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       {ip.room?.number || (
                         <span className="text-muted-foreground">-</span>
                       )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {ip.company?.user?.name || (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {ip.expiresAt ? formatDate(ip.expiresAt) : <span className="text-muted-foreground">-</span>}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <IpActionsButton
+                        ip={ip}
+                        onActionComplete={handleRefreshIps}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

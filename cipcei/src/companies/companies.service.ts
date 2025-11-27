@@ -7,6 +7,10 @@ import { UpdateCompanyDto } from './dto/update-company.dto';
 import { Room } from 'src/rooms/entities/room.entity';
 import { User, UserRole } from 'src/users/entities/user.entity';
 import { Ip, IpStatus } from 'src/ips/entities/ip.entity';
+import { CompanyResponseDto } from './dto/company-response.dto';
+import { toCompanyResponseDto, toCompanyResponseDtoList } from './companies.mapper';
+import { IpResponseDto } from 'src/ips/dto/ip-response.dto';
+import { toIpResponseDtoList } from 'src/ips/ips.mapper';
 
 @Injectable()
 export class CompaniesService {
@@ -22,11 +26,14 @@ export class CompaniesService {
   private dataSource: DataSource,
   ) {}
 
-  async findAll(): Promise<Company[]> {
-    return this.companyRepository.find();
+  async findAll(): Promise<CompanyResponseDto[]> {
+    const companies = await this.companyRepository.find({
+      relations: ['room', 'user'],
+    });
+    return toCompanyResponseDtoList(companies);
   }
 
-  async create(createCompanyDto: CreateCompanyDto): Promise<Company> {
+  async create(createCompanyDto: CreateCompanyDto): Promise<CompanyResponseDto> {
     const { user: userData, roomId } = createCompanyDto;
 
      // 1. Verificar se o email do usuário já existe
@@ -63,30 +70,48 @@ export class CompaniesService {
     savedUser.company = savedCompany;
     await this.userRepository.save(savedUser);
 
-    return savedCompany;
+    // Buscar a empresa completa com relacoes para retornar o DTO
+    const fullCompany = await this.companyRepository.findOne({
+      where: { id: savedCompany.id },
+      relations: ['room', 'user'],
+    });
+    return toCompanyResponseDto(fullCompany!);
   }
 
-  async findOne(id: string): Promise<Company | null> {
-    return this.companyRepository.findOneBy({ id });
+  async findOne(id: string): Promise<CompanyResponseDto | null> {
+    const company = await this.companyRepository.findOne({
+      where: { id },
+      relations: ['room', 'user'],
+    });
+    if (!company) {
+      return null;
+    }
+    return toCompanyResponseDto(company);
   }
 
-  async update(id: string, updateCompanyDto: UpdateCompanyDto): Promise<Company> {
+  async update(id: string, updateCompanyDto: UpdateCompanyDto): Promise<CompanyResponseDto> {
     // O método `preload` busca uma entidade pelo id e a atualiza com os novos dados.
     const company = await this.companyRepository.preload({
       id: id,
       ...updateCompanyDto,
     });
     if (!company) {
-      throw new NotFoundException(`Company with ID "${id}" not found`);
+      throw new NotFoundException(`Empresa com ID "${id}" nao encontrada`);
     }
-    return this.companyRepository.save(company);
+    const savedCompany = await this.companyRepository.save(company);
+    // Buscar com relacoes para retornar o DTO
+    const fullCompany = await this.companyRepository.findOne({
+      where: { id: savedCompany.id },
+      relations: ['room', 'user'],
+    });
+    return toCompanyResponseDto(fullCompany!);
   }
 
   async remove(id: string): Promise<void> {
     // 1. Iniciar a transação para garantir a consistência de todas as operações
     await this.dataSource.transaction(async (transactionalEntityManager) => {
       // 2. Encontrar a empresa e carregar suas relações ('user' e 'room')
-      const company = await transactionalEntityManager.findOne(Company, { 
+      const company = await transactionalEntityManager.findOne(Company, {
         where: { id },
         relations: ['user', 'room'], // Carregar a sala é crucial para a nova lógica
       });
@@ -95,77 +120,87 @@ export class CompaniesService {
         throw new NotFoundException(`Empresa com ID "${id}" não encontrada`);
       }
 
-      // 3. Fazer o soft delete da empresa
+      // 3. Liberar IPs ANTES do soft delete da empresa
+      // IMPORTANTE: A liberação deve ocorrer antes do softRemove porque o TypeORM
+      // aplica filtro global de soft-delete nas queries. Após softRemove, a relação
+      // company: { id } no find() não encontraria a empresa (já "deletada"),
+      // fazendo com que os IPs não fossem liberados.
+      const ipsToRelease = await transactionalEntityManager.find(Ip, {
+        select: ['id'],
+        where: {
+          company: { id: company.id }, // Filtra por empresa, não por sala
+          status: IpStatus.IN_USE,
+        },
+      });
+
+      if (ipsToRelease.length > 0) {
+        const ipIdsToRelease = ipsToRelease.map(ip => ip.id);
+
+        await transactionalEntityManager.update(Ip,
+          { id: In(ipIdsToRelease) },
+          {
+            status: IpStatus.AVAILABLE,
+            company: undefined as any, // Remove associação com a empresa
+            macAddress: undefined,
+            userName: undefined,
+            assignedAt: undefined,
+            expiresAt: undefined,
+            isTemporary: false,
+          }
+        );
+      }
+
+      // 4. Fazer o soft delete da empresa (após liberar IPs)
       await transactionalEntityManager.softRemove(company);
 
-      // 4. Desativar o usuário associado
+      // 5. Desativar o usuário associado
       if (company.user) {
         await transactionalEntityManager.update(User, company.user.id, { isActive: false });
       }
-
-      // 5. NOVA LÓGICA: Liberar os IPs associados à sala da empresa
-      if (company.room) {
-        // Encontra todos os IDs de IPs que estão 'in_use' na sala da empresa
-        const ipsToRelease = await transactionalEntityManager.find(Ip, {
-          select: ['id'], // Selecionamos apenas o ID para eficiência
-          where: {
-            room: { id: company.room.id },
-            status: IpStatus.IN_USE,
-          },
-        });
-
-        // Se encontrarmos algum IP para liberar...
-        if (ipsToRelease.length > 0) {
-          const ipIdsToRelease = ipsToRelease.map(ip => ip.id);
-          
-          // ... atualizamos todos eles de uma só vez
-          await transactionalEntityManager.update(Ip, 
-            { id: In(ipIdsToRelease) }, // Usamos o operador 'In' para atualizar múltiplos IPs
-            {
-              status: IpStatus.AVAILABLE,
-              macAddress: undefined, // Limpa o MAC Address
-            }
-          );
-        }
-      }
-      // A relação da empresa com a sala é "desvinculada" implicitamente pelo soft delete.
-      // A sala agora fica livre para ser associada a uma nova empresa.
+      // A empresa é removida mas a sala permanece disponível para outras empresas
     });
   }
 
   /**
    * Company visualiza TODOS os seus IPs (ativos + expirados)
    */
-  async getAllMyIps(companyId: string): Promise<Ip[]> {
-    return this.ipRepository.find({
+  async getAllMyIps(companyId: string): Promise<IpResponseDto[]> {
+    const ips = await this.ipRepository.find({
       where: { company: { id: companyId } },
+      relations: ['room', 'company', 'company.user'],
       order: { assignedAt: 'DESC' },
     });
+    return toIpResponseDtoList(ips);
   }
 
   /**
    * Company visualiza apenas IPs ativos (IN_USE)
    */
-  async getActiveIps(companyId: string): Promise<Ip[]> {
-    return this.ipRepository.find({
+  async getActiveIps(companyId: string): Promise<IpResponseDto[]> {
+    const ips = await this.ipRepository.find({
       where: {
         company: { id: companyId },
         status: IpStatus.IN_USE,
       },
+      relations: ['room', 'company', 'company.user'],
       order: { assignedAt: 'DESC' },
     });
+    return toIpResponseDtoList(ips);
   }
 
   /**
    * Company visualiza IPs que podem ser renovados
-   * (IPs temporários expirados ou próximos de expirar - 7 dias)
+   * (IPs temporarios expirados ou proximos de expirar - 7 dias)
    */
-  async getRenewableIps(companyId: string): Promise<Ip[]> {
+  async getRenewableIps(companyId: string): Promise<IpResponseDto[]> {
     const sevenDaysFromNow = new Date();
     sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
 
-    return this.ipRepository
+    const ips = await this.ipRepository
       .createQueryBuilder('ip')
+      .leftJoinAndSelect('ip.room', 'room')
+      .leftJoinAndSelect('ip.company', 'company')
+      .leftJoinAndSelect('company.user', 'user')
       .where('ip.companyId = :companyId', { companyId })
       .andWhere('ip.isTemporary = :isTemporary', { isTemporary: true })
       .andWhere(
@@ -177,5 +212,6 @@ export class CompaniesService {
       )
       .orderBy('ip.expiresAt', 'ASC')
       .getMany();
+    return toIpResponseDtoList(ips);
   }
 }

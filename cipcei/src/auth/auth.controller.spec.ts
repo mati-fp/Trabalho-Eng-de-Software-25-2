@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { UserRole } from '../users/entities/user.entity';
 
 describe('AuthController', () => {
@@ -118,7 +119,9 @@ describe('AuthController', () => {
   });
 
   describe('refresh', () => {
-    const validRefreshToken = 'valid-refresh-token-xyz';
+    const validRefreshTokenDto: RefreshTokenDto = {
+      refresh_token: 'valid-refresh-token-xyz',
+    };
 
     it('should successfully refresh access token', async () => {
       // Setup
@@ -129,11 +132,11 @@ describe('AuthController', () => {
       authService.refreshToken.mockResolvedValue(mockRefreshResponse);
 
       // Execute
-      const result = await controller.refresh(validRefreshToken);
+      const result = await controller.refresh(validRefreshTokenDto);
 
       // Assert
       expect(result).toEqual(mockRefreshResponse);
-      expect(authService.refreshToken).toHaveBeenCalledWith(validRefreshToken);
+      expect(authService.refreshToken).toHaveBeenCalledWith(validRefreshTokenDto.refresh_token);
       expect(authService.refreshToken).toHaveBeenCalledTimes(1);
     });
 
@@ -143,13 +146,15 @@ describe('AuthController', () => {
         access_token: 'new-token',
       });
 
-      const testToken = 'test-refresh-token-123';
+      const testTokenDto: RefreshTokenDto = {
+        refresh_token: 'test-refresh-token-123',
+      };
 
       // Execute
-      await controller.refresh(testToken);
+      await controller.refresh(testTokenDto);
 
       // Assert
-      expect(authService.refreshToken).toHaveBeenCalledWith(testToken);
+      expect(authService.refreshToken).toHaveBeenCalledWith(testTokenDto.refresh_token);
     });
 
     it('should propagate errors from authService on invalid token', async () => {
@@ -157,8 +162,12 @@ describe('AuthController', () => {
       const error = new Error('Invalid refresh token');
       authService.refreshToken.mockRejectedValue(error);
 
+      const invalidTokenDto: RefreshTokenDto = {
+        refresh_token: 'invalid-token',
+      };
+
       // Execute & Assert
-      await expect(controller.refresh('invalid-token')).rejects.toThrow(
+      await expect(controller.refresh(invalidTokenDto)).rejects.toThrow(
         'Invalid refresh token',
       );
     });
@@ -169,7 +178,7 @@ describe('AuthController', () => {
       authService.refreshToken.mockRejectedValue(error);
 
       // Execute & Assert
-      await expect(controller.refresh(validRefreshToken)).rejects.toThrow('Token expired');
+      await expect(controller.refresh(validRefreshTokenDto)).rejects.toThrow('Token expired');
     });
   });
 

@@ -156,7 +156,7 @@ describe('AuthService', () => {
 
       // Execute & Assert
       await expect(service.login(loginDto)).rejects.toThrow(
-        new UnauthorizedException('Email ou senha inválidos'),
+        new UnauthorizedException('Email ou senha invalidos'),
       );
 
       expect(usersService.findOneByEmail).toHaveBeenCalledWith(loginDto.email);
@@ -170,22 +170,23 @@ describe('AuthService', () => {
 
       // Execute & Assert
       await expect(service.login(loginDto)).rejects.toThrow(
-        new UnauthorizedException('Email ou senha inválidos'),
+        new UnauthorizedException('Email ou senha invalidos'),
       );
 
       expect(bcrypt.compare).toHaveBeenCalledWith(loginDto.password, mockUser.password);
       expect(jwtService.sign).not.toHaveBeenCalled();
     });
 
-    it('should throw UnauthorizedException when user is inactive', async () => {
+    it('should throw UnauthorizedException when user is inactive (same message as invalid credentials)', async () => {
       // Setup
       const inactiveUser = { ...mockUser, isActive: false };
       usersService.findOneByEmail.mockResolvedValue(inactiveUser as any);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       // Execute & Assert
+      // Mensagem generica para nao revelar que o usuario existe mas esta inativo
       await expect(service.login(loginDto)).rejects.toThrow(
-        new UnauthorizedException('Usuário inativo'),
+        new UnauthorizedException('Email ou senha invalidos'),
       );
 
       expect(jwtService.sign).not.toHaveBeenCalled();

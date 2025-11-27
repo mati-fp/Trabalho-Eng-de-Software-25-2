@@ -8,11 +8,12 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { IpRequestsService } from './ip-requests.service';
 import { CreateIpRequestDto } from './dto/create-ip-request.dto';
 import { ApproveIpRequestDto } from './dto/approve-ip-request.dto';
 import { RejectIpRequestDto } from './dto/reject-ip-request.dto';
+import { IpRequestResponseDto } from './dto/ip-request-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -31,7 +32,10 @@ export class IpRequestsController {
   @Post()
   @Roles([UserRole.COMPANY])
   @ApiOperation({ summary: 'Solicitar IP (Company) - UC3, UC5, UC2' })
-  async create(@Body() createIpRequestDto: CreateIpRequestDto, @Request() req) {
+  @ApiResponse({ status: 201, description: 'Solicitação criada com sucesso', type: IpRequestResponseDto })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiResponse({ status: 401, description: 'Não autenticado' })
+  async create(@Body() createIpRequestDto: CreateIpRequestDto, @Request() req): Promise<IpRequestResponseDto> {
     return this.ipRequestsService.create(createIpRequestDto, req.user);
   }
 
@@ -41,7 +45,9 @@ export class IpRequestsController {
   @Get()
   @Roles([UserRole.ADMIN])
   @ApiOperation({ summary: 'Listar todas as solicitações (Admin)' })
-  async findAll() {
+  @ApiResponse({ status: 200, description: 'Lista de solicitações retornada', type: [IpRequestResponseDto] })
+  @ApiResponse({ status: 401, description: 'Não autenticado' })
+  async findAll(): Promise<IpRequestResponseDto[]> {
     return this.ipRequestsService.findAll();
   }
 
@@ -52,7 +58,9 @@ export class IpRequestsController {
   @Get('my-requests')
   @Roles([UserRole.COMPANY])
   @ApiOperation({ summary: 'Listar minhas solicitações (Company)' })
-  async getMyRequests(@Request() req) {
+  @ApiResponse({ status: 200, description: 'Minhas solicitações retornadas', type: [IpRequestResponseDto] })
+  @ApiResponse({ status: 401, description: 'Não autenticado' })
+  async getMyRequests(@Request() req): Promise<IpRequestResponseDto[]> {
     return this.ipRequestsService.findByCompany(req.user.company.id);
   }
 
@@ -63,7 +71,9 @@ export class IpRequestsController {
   @Get('pending')
   @Roles([UserRole.ADMIN])
   @ApiOperation({ summary: 'Listar solicitações pendentes (Admin)' })
-  async findPending() {
+  @ApiResponse({ status: 200, description: 'Solicitações pendentes retornadas', type: [IpRequestResponseDto] })
+  @ApiResponse({ status: 401, description: 'Não autenticado' })
+  async findPending(): Promise<IpRequestResponseDto[]> {
     return this.ipRequestsService.findPending();
   }
 
@@ -74,7 +84,9 @@ export class IpRequestsController {
   @Get('company/:companyId')
   @Roles([UserRole.ADMIN])
   @ApiOperation({ summary: 'Listar solicitações de uma empresa (Admin)' })
-  async findByCompany(@Param('companyId') companyId: string) {
+  @ApiResponse({ status: 200, description: 'Solicitações da empresa retornadas', type: [IpRequestResponseDto] })
+  @ApiResponse({ status: 401, description: 'Não autenticado' })
+  async findByCompany(@Param('companyId') companyId: string): Promise<IpRequestResponseDto[]> {
     return this.ipRequestsService.findByCompany(companyId);
   }
 
@@ -85,7 +97,10 @@ export class IpRequestsController {
   @Get(':id')
   @Roles([UserRole.ADMIN, UserRole.COMPANY])
   @ApiOperation({ summary: 'Buscar solicitação por ID' })
-  async findOne(@Param('id') id: string) {
+  @ApiResponse({ status: 200, description: 'Solicitação encontrada', type: IpRequestResponseDto })
+  @ApiResponse({ status: 401, description: 'Não autenticado' })
+  @ApiResponse({ status: 404, description: 'Solicitação não encontrada' })
+  async findOne(@Param('id') id: string): Promise<IpRequestResponseDto> {
     return this.ipRequestsService.findOne(id);
   }
 
@@ -95,7 +110,10 @@ export class IpRequestsController {
   @Patch(':id/cancel')
   @Roles([UserRole.COMPANY])
   @ApiOperation({ summary: 'Cancelar solicitação pendente (Company)' })
-  async cancel(@Param('id') id: string, @Request() req) {
+  @ApiResponse({ status: 200, description: 'Solicitação cancelada', type: IpRequestResponseDto })
+  @ApiResponse({ status: 400, description: 'Solicitação já processada' })
+  @ApiResponse({ status: 401, description: 'Não autenticado' })
+  async cancel(@Param('id') id: string, @Request() req): Promise<IpRequestResponseDto> {
     return this.ipRequestsService.cancel(id, req.user);
   }
 
@@ -105,11 +123,14 @@ export class IpRequestsController {
   @Patch(':id/approve')
   @Roles([UserRole.ADMIN])
   @ApiOperation({ summary: 'Aprovar solicitação (Admin)' })
+  @ApiResponse({ status: 200, description: 'Solicitação aprovada', type: IpRequestResponseDto })
+  @ApiResponse({ status: 400, description: 'Solicitação já processada' })
+  @ApiResponse({ status: 401, description: 'Não autenticado' })
   async approve(
     @Param('id') id: string,
     @Body() approveDto: ApproveIpRequestDto,
     @Request() req,
-  ) {
+  ): Promise<IpRequestResponseDto> {
     return this.ipRequestsService.approve(id, approveDto, req.user);
   }
 
@@ -119,11 +140,14 @@ export class IpRequestsController {
   @Patch(':id/reject')
   @Roles([UserRole.ADMIN])
   @ApiOperation({ summary: 'Rejeitar solicitação (Admin)' })
+  @ApiResponse({ status: 200, description: 'Solicitação rejeitada', type: IpRequestResponseDto })
+  @ApiResponse({ status: 400, description: 'Solicitação já processada' })
+  @ApiResponse({ status: 401, description: 'Não autenticado' })
   async reject(
     @Param('id') id: string,
     @Body() rejectDto: RejectIpRequestDto,
     @Request() req,
-  ) {
+  ): Promise<IpRequestResponseDto> {
     return this.ipRequestsService.reject(id, rejectDto, req.user);
   }
 }

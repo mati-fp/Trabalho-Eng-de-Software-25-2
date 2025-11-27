@@ -19,5 +19,7 @@ export interface FindIpHistoryParams {
   action?: IpAction;
   startDate?: string;
   endDate?: string;
+  page?: number;
+  limit?: number;
 }
 

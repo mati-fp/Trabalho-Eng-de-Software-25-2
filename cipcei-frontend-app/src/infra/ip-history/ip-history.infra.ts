@@ -1,10 +1,10 @@
 import { api } from "@/lib/api";
 import { FindIpHistoryParams } from "./ip-history.payloads";
-import { IpHistory } from "@/types";
+import { IpHistory, PaginatedResponse } from "@/types";
 
 const findAllIpHistory = async (
   params?: FindIpHistoryParams
-): Promise<IpHistory[]> => {
+): Promise<PaginatedResponse<IpHistory>> => {
   const response = await api.get("/ip-history", { params });
   return response.data;
 };

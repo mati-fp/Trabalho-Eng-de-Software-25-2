@@ -256,11 +256,31 @@ describe('IpsService', () => {
   });
 
   describe('unassign', () => {
-    it('should successfully unassign IP and return DTO', async () => {
-      const ipInUse = { ...mockIp, status: IpStatus.IN_USE, macAddress: 'AA:BB:CC:DD:EE:FF', company: mockCompany };
-      const unassignedIp = { ...mockIp, status: IpStatus.AVAILABLE, macAddress: undefined, company: null };
+    it('should successfully unassign IP and clear all fields', async () => {
+      const ipInUse = {
+        ...mockIp,
+        status: IpStatus.IN_USE,
+        macAddress: 'AA:BB:CC:DD:EE:FF',
+        userName: 'John Doe',
+        isTemporary: true,
+        assignedAt: new Date(),
+        expiresAt: new Date(),
+        lastRenewedAt: new Date(),
+        company: mockCompany,
+      };
+      const unassignedIp = {
+        ...mockIp,
+        status: IpStatus.AVAILABLE,
+        macAddress: null,
+        userName: null,
+        isTemporary: false,
+        assignedAt: null,
+        expiresAt: null,
+        lastRenewedAt: null,
+        company: null,
+      };
 
-      // Primeiro findOne carrega IP com company, segundo para DTO
+      // Primeiro findOne carrega IP com company para audit log, segundo para DTO
       ipRepository.findOne
         .mockResolvedValueOnce(ipInUse as any)
         .mockResolvedValueOnce(unassignedIp as any);
@@ -268,8 +288,20 @@ describe('IpsService', () => {
 
       const result = await service.unassign(mockIp.id, mockAdminUser);
 
+      // Verifica que save foi chamado com todos os campos resetados
+      expect(ipRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: IpStatus.AVAILABLE,
+          macAddress: null,
+          userName: null,
+          isTemporary: false,
+          assignedAt: null,
+          expiresAt: null,
+          lastRenewedAt: null,
+          company: null,
+        }),
+      );
       expect(result.status).toBe(IpStatus.AVAILABLE);
-      expect(result.macAddress).toBeUndefined();
       expect(ipHistoryService.create).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'released',

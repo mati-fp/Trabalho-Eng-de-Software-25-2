@@ -97,8 +97,7 @@ export class IpResponseDto {
   @ApiProperty({
     description: 'Data de expiracao do IP (para IPs temporarios)',
     example: '2025-06-15T10:30:00.000Z',
-    required: false,
     nullable: true,
   })
-  expiresAt?: Date;
+  expiresAt: Date | null;
 }

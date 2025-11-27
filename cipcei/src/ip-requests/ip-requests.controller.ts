@@ -21,7 +21,6 @@ import { UserRole } from '../users/entities/user.entity';
 
 @ApiTags('IP Requests')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('ip-requests')
 export class IpRequestsController {
   constructor(private readonly ipRequestsService: IpRequestsService) {}

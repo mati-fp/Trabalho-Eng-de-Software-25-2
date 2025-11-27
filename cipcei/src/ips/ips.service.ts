@@ -180,15 +180,15 @@ export class IpsService {
       });
     }
 
-    // Limpar campos do IP
+    // Resetar todos os campos para valores default
     ip.status = IpStatus.AVAILABLE;
-    ip.macAddress = undefined as any;
-    ip.userName = undefined as any;
-    ip.company = undefined as any;
-    ip.assignedAt = undefined as any;
-    ip.expiresAt = undefined as any;
-    ip.lastRenewedAt = undefined as any;
+    ip.macAddress = null as any;
+    ip.userName = null as any;
     ip.isTemporary = false;
+    ip.assignedAt = null as any;
+    ip.expiresAt = null as any;
+    ip.lastRenewedAt = null as any;
+    ip.company = null as any;
 
     const savedIp = await this.ipRepository.save(ip);
     // Buscar IP com relacoes para o DTO

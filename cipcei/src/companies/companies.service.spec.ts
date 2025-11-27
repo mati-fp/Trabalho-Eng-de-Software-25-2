@@ -337,7 +337,7 @@ describe('CompaniesService', () => {
       });
     });
 
-    it('should release IPs and create audit logs when removing company', async () => {
+    it('should release IPs and reset all fields when removing company', async () => {
       const mockIpsToRelease = [
         { id: 'ip-1', macAddress: 'AA:BB:CC:DD:EE:01', userName: 'User 1', room: mockRoom },
         { id: 'ip-2', macAddress: 'AA:BB:CC:DD:EE:02', userName: 'User 2', room: mockRoom },
@@ -355,7 +355,8 @@ describe('CompaniesService', () => {
 
       await service.remove(mockCompany.id, mockAdminUser);
 
-      // Verifica que busca IPs da EMPRESA com relations para audit log
+      // Verifica que busca IPs da EMPRESA (nao da sala) - correcao para multiplas empresas por sala
+      // com relations para audit log
       expect(mockEntityManager.find).toHaveBeenCalledWith(Ip, {
         where: {
           company: { id: mockCompany.id },
@@ -373,19 +374,19 @@ describe('CompaniesService', () => {
         }),
       );
 
-      // Verifica que atualizou os IPs
+      // Verifica que todos os campos sao resetados (consistente com IpsService.unassign)
       expect(mockEntityManager.update).toHaveBeenCalledWith(
         Ip,
         { id: expect.anything() },
         {
           status: IpStatus.AVAILABLE,
-          company: undefined,
-          macAddress: undefined,
-          userName: undefined,
-          assignedAt: undefined,
-          expiresAt: undefined,
-          lastRenewedAt: undefined,
+          company: null,
+          macAddress: null,
+          userName: null,
           isTemporary: false,
+          assignedAt: null,
+          expiresAt: null,
+          lastRenewedAt: null,
         },
       );
     });

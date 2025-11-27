@@ -17,6 +17,7 @@ import { Eye, Pencil, Trash2, Plus } from "lucide-react";
 import CompanyModal from "./components/CompanyModal";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import Toast from "@/components/ui/toast";
+import Pagination from "@/components/ui/pagination";
 import {
   CreateCompanyPayload,
   UpdateCompanyPayload,
@@ -41,7 +42,7 @@ export default function AdminClientsPage() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 15;
 
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
@@ -426,40 +427,13 @@ export default function AdminClientsPage() {
             </Table>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-border">
-                <div className="text-sm text-muted-foreground">
-                  Mostrando {startIndex + 1} a{" "}
-                  {Math.min(endIndex, filteredCompanies.length)} de{" "}
-                  {filteredCompanies.length} resultados
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
-                    }
-                    disabled={currentPage === 1}
-                  >
-                    Anterior
-                  </Button>
-                  <div className="flex items-center px-3 text-sm text-muted-foreground">
-                    Página {currentPage} de {totalPages}
-                  </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                  >
-                    Próxima
-                  </Button>
-                </div>
-              </div>
-            )}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredCompanies.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+            />
           </>
         )}
       </div>

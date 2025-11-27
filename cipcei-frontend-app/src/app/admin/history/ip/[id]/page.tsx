@@ -29,6 +29,10 @@ export default function AdminHistoryIpPage() {
   const [sortField, setSortField] = useState<SortField>("performedAt");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
+
   // Fetch IP History from API
   useEffect(() => {
     const fetchHistory = async () => {
@@ -53,7 +57,7 @@ export default function AdminHistoryIpPage() {
     }
   }, [ipId]);
 
-  // Apply local sorting
+  // Apply local sorting and pagination
   useEffect(() => {
     let result = [...history];
 
@@ -74,7 +78,14 @@ export default function AdminHistoryIpPage() {
     });
 
     setFilteredHistory(result);
+    setCurrentPage(1); // Reset to first page when sorting changes
   }, [history, sortField, sortOrder]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedHistory = filteredHistory.slice(startIndex, endIndex);
 
   // Toggle sorting
   const handleSort = (field: SortField) => {
@@ -122,14 +133,19 @@ export default function AdminHistoryIpPage() {
       {/* Table Section */}
       <div className="bg-card rounded-lg shadow overflow-hidden">
         <HistoryTable
-          history={filteredHistory}
+          history={paginatedHistory}
           loading={loading}
           error={error}
           sortField={sortField}
           sortOrder={sortOrder}
           onSort={handleSort}
           showRedirectIcons={false}
-          showPagination={false}
+          showPagination={true}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredHistory.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
         />
       </div>
     </div>

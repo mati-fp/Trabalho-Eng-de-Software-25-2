@@ -24,6 +24,7 @@ import IpActionsMenu from "./components/IpActionsMenu";
 import { CompaniesAPI } from "@/infra/companies";
 import { getIpStatusBadge, isIpExpired } from "@/components/ui/table-badge";
 import { formatDate } from "@/lib/utils";
+import Pagination from "@/components/ui/pagination";
 
 type SortField = "address" | "status";
 type SortOrder = "asc" | "desc";
@@ -44,7 +45,7 @@ export default function IpsPage() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 15;
 
   // Fetch IPs from API
   useEffect(() => {
@@ -249,37 +250,13 @@ export default function IpsPage() {
             </Table>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-border">
-                <div className="text-sm text-muted-foreground">
-                  Mostrando {startIndex + 1} a {Math.min(endIndex, filteredIps.length)} de{" "}
-                  {filteredIps.length} resultados
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    Anterior
-                  </Button>
-                  <div className="flex items-center px-3 text-sm text-muted-foreground">
-                    Página {currentPage} de {totalPages}
-                  </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                  >
-                    Próxima
-                  </Button>
-                </div>
-              </div>
-            )}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredIps.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+            />
           </>
         )}
       </div>

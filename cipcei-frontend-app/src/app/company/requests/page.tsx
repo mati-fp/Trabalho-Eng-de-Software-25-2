@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { getRequestTypeBadge, getStatusBadge } from "@/components/ui/table-badge";
 import { formatDate } from "@/lib/utils";
 import CancelRequestButton from "./components/CancelRequestButton";
+import Pagination from "@/components/ui/pagination";
 
 type SortField = "requestType" | "status" | "requestedBy" | "requestDate";
 type SortOrder = "asc" | "desc";
@@ -42,7 +43,7 @@ export default function CompanyRequestsPage() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 15;
 
   // Fetch requests from API
   useEffect(() => {
@@ -323,40 +324,13 @@ export default function CompanyRequestsPage() {
             </Table>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-border">
-                <div className="text-sm text-muted-foreground">
-                  Mostrando {startIndex + 1} a{" "}
-                  {Math.min(endIndex, filteredRequests.length)} de{" "}
-                  {filteredRequests.length} resultados
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
-                    }
-                    disabled={currentPage === 1}
-                  >
-                    Anterior
-                  </Button>
-                  <div className="flex items-center px-3 text-sm text-muted-foreground">
-                    Página {currentPage} de {totalPages}
-                  </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                  >
-                    Próxima
-                  </Button>
-                </div>
-              </div>
-            )}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredRequests.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+            />
           </>
         )}
       </div>

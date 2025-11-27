@@ -88,11 +88,12 @@ export interface IpCompany {
   user: IpCompanyUser;
 }
 
+export type IpStatus = "available" | "in_use" | "expired";
 // IP type matching the backend IpResponseDto
 export interface IP {
   id: string;
   address: string;
-  status: "available" | "in_use" | "expired";
+  status: IpStatus;
   macAddress?: string;
   room?: IpRoom;
   company?: IpCompany;

@@ -1,5 +1,10 @@
-import { IpRequestStatus, IpRequestType } from "@/types";
+import { IP, IpRequestStatus, IpRequestType, IpStatus } from "@/types";
 import { Badge } from "./badge";
+
+// Check if IP is expired
+export const isIpExpired = (expiresAt?: string): boolean => {
+  return expiresAt ? new Date(expiresAt) < new Date() : false;
+};
 
 export const getStatusBadge = (status: IpRequestStatus) => {
   switch (status) {
@@ -63,4 +68,27 @@ export const getRequestTypeBadge = (requestType: IpRequestType) => {
         </Badge>
       );
   }
+};
+
+// Get status badge variant
+export const getIpStatusBadge = (status: IpStatus, expiresAt?: string) => {
+  if (status === "expired" || isIpExpired(expiresAt)) {
+    return (
+      <Badge variant="destructive" className="bg-destructive/80 text-destructive-foreground">
+        Expirado
+      </Badge>
+    );
+  }
+  if (status === "available") {
+    return (
+      <Badge variant="default" className="bg-secondary text-primary-foreground">
+        Disponível
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="secondary" className="bg-primary text-secondary-foreground">
+      Alocado
+    </Badge>
+  );
 };

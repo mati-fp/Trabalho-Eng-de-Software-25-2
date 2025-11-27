@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { IpsAPI, FindAllIpsParams } from "@/infra/ips";
-import { IP } from "@/types";
+import { FindAllIpsParams } from "@/infra/ips";
+import { IP, IpStatus } from "@/types";
 import {
   Table,
   TableBody,
@@ -20,10 +20,10 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/hooks";
 import IpActionsMenu from "./components/IpActionsMenu";
 import { CompaniesAPI } from "@/infra/companies";
+import { getIpStatusBadge, isIpExpired } from "@/components/ui/table-badge";
+import { formatDate } from "@/lib/utils";
 
 type SortField = "address" | "status";
 type SortOrder = "asc" | "desc";
@@ -36,6 +36,7 @@ export default function IpsPage() {
 
   // Filter states
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [filterExpiredIps, setFilterExpiredIps] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Sorting states
@@ -45,7 +46,6 @@ export default function IpsPage() {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  const { profile } = useAuth();
 
   // Fetch IPs from API
   useEffect(() => {
@@ -56,10 +56,13 @@ export default function IpsPage() {
 
         const params: FindAllIpsParams = {};
 
-        if (statusFilter !== "all") {
-          params.status = statusFilter as "available" | "in_use";
+        if (statusFilter === "expired") {
+          setFilterExpiredIps(true);
         }
-        //params.companyId = profile?.companyId;
+        if (!["expired", "all"].includes(statusFilter)) {
+          params.status = statusFilter as IpStatus;
+        }
+
         const data = await CompaniesAPI.getMyIps({});
         setIps(data);
         setFilteredIps(data);
@@ -84,6 +87,9 @@ export default function IpsPage() {
         ip.address.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
+    if (filterExpiredIps) {
+      result = result.filter((ip) => isIpExpired(ip.expiresAt));
+    }
 
     // Apply sorting
     result.sort((a, b) => {
@@ -100,7 +106,7 @@ export default function IpsPage() {
 
     setFilteredIps(result);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [ips, searchQuery, sortField, sortOrder]);
+  }, [ips, searchQuery, sortField, sortOrder, filterExpiredIps]);
 
   // Pagination
   const totalPages = Math.ceil(filteredIps.length / itemsPerPage);
@@ -124,21 +130,6 @@ export default function IpsPage() {
     }
   };
 
-  // Get status badge variant
-  const getStatusBadge = (status: string) => {
-    if (status === "available") {
-      return (
-        <Badge variant="default" className="bg-secondary text-primary-foreground">
-          Disponível
-        </Badge>
-      );
-    }
-    return (
-      <Badge variant="secondary" className="bg-primary text-secondary-foreground">
-        Alocado
-      </Badge>
-    );
-  };
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -170,6 +161,7 @@ export default function IpsPage() {
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="available">Disponível</SelectItem>
                 <SelectItem value="in_use">Alocado</SelectItem>
+                <SelectItem value="expired">Expirado</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -241,9 +233,9 @@ export default function IpsPage() {
               </TableHeader>
               <TableBody>
                 {currentIps.map((ip) => (
-                  <TableRow key={ip.id}>
+                  <TableRow key={ip.id} className={isIpExpired(ip.expiresAt) ? "bg-red-50 dark:bg-red-950/20" : ""}>
                     <TableCell className="font-medium">{ip.address}</TableCell>
-                    <TableCell className="text-center">{getStatusBadge(ip.status)}</TableCell>
+                    <TableCell className="text-center">{getIpStatusBadge(ip.status, ip.expiresAt)}</TableCell>
                     <TableCell className="text-center">
                       {ip.macAddress || (
                         <span className="text-muted-foreground">-</span>
@@ -255,7 +247,7 @@ export default function IpsPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-center">
-                    {"25/11/2025"}
+                      {ip.expiresAt ? formatDate(ip.expiresAt) : <span className="text-muted-foreground">-</span>}
                     </TableCell>
                     <TableCell className="text-center">
                       <IpActionsMenu ip={ip} />

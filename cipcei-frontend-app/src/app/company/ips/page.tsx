@@ -123,6 +123,23 @@ export default function IpsPage() {
     }
   };
 
+  // Refresh IPs list
+  const handleRefreshIps = async () => {
+    try {
+      setError(null);
+      const params: FindAllIpsParams = {};
+      if (statusFilter !== "all") {
+        params.status = statusFilter as IpStatus;
+      }
+      const data = await CompaniesAPI.getMyIps({});
+      setIps(data);
+      setFilteredIps(data);
+    } catch (err) {
+      setError("Erro ao atualizar IPs. Tente novamente.");
+      console.error("Error refreshing IPs:", err);
+    }
+  };
+
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -242,7 +259,7 @@ export default function IpsPage() {
                       {ip.expiresAt ? formatDate(ip.expiresAt) : <span className="text-muted-foreground">-</span>}
                     </TableCell>
                     <TableCell className="text-center">
-                      <IpActionsMenu ip={ip} />
+                      <IpActionsMenu ip={ip} onActionComplete={handleRefreshIps} />
                     </TableCell>
                   </TableRow>
                 ))}

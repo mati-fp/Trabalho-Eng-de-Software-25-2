@@ -6,15 +6,18 @@ import { IpsService } from './ips.service';
 import { Ip, IpStatus } from './entities/ip.entity';
 import { Room } from '../rooms/entities/room.entity';
 import { Company } from '../companies/entities/company.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 import { CreateIpDto } from './dto/create-ip.dto';
 import { AssignIpDto } from './dto/assign-ip.dto';
 import { FindAllIpsDto } from './dto/find-all-ips.dto';
+import { IpHistoryService } from '../ip-history/ip-history.service';
 
 describe('IpsService', () => {
   let service: IpsService;
   let ipRepository: jest.Mocked<Repository<Ip>>;
   let roomRepository: jest.Mocked<Repository<Room>>;
   let companyRepository: jest.Mocked<Repository<Company>>;
+  let ipHistoryService: jest.Mocked<IpHistoryService>;
 
   const mockRoom = {
     id: 'room-uuid-123',
@@ -24,6 +27,7 @@ describe('IpsService', () => {
   const mockCompany = {
     id: 'company-uuid-456',
     room: mockRoom,
+    user: { id: 'user-uuid-789', name: 'Test Company' },
   };
 
   const mockIp = {
@@ -34,6 +38,13 @@ describe('IpsService', () => {
     room: mockRoom,
     company: null,
   };
+
+  const mockAdminUser = {
+    id: 'admin-uuid-999',
+    email: 'admin@cei.ufrgs.br',
+    name: 'Admin User',
+    role: UserRole.ADMIN,
+  } as User;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -62,6 +73,12 @@ describe('IpsService', () => {
             findOne: jest.fn(),
           },
         },
+        {
+          provide: IpHistoryService,
+          useValue: {
+            create: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -69,6 +86,7 @@ describe('IpsService', () => {
     ipRepository = module.get(getRepositoryToken(Ip)) as jest.Mocked<Repository<Ip>>;
     roomRepository = module.get(getRepositoryToken(Room)) as jest.Mocked<Repository<Room>>;
     companyRepository = module.get(getRepositoryToken(Company)) as jest.Mocked<Repository<Company>>;
+    ipHistoryService = module.get(IpHistoryService) as jest.Mocked<IpHistoryService>;
   });
 
   afterEach(() => {
@@ -172,16 +190,23 @@ describe('IpsService', () => {
       companyRepository.findOne.mockResolvedValue(mockCompany as any);
       ipRepository.save.mockResolvedValue(assignedIp as any);
 
-      const result = await service.assign(mockIp.id, assignIpDto);
+      const result = await service.assign(mockIp.id, assignIpDto, mockAdminUser);
 
       expect(result.status).toBe(IpStatus.IN_USE);
       expect(result.macAddress).toBe(assignIpDto.macAddress);
+      expect(ipHistoryService.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'assigned',
+          macAddress: assignIpDto.macAddress,
+          notes: 'Atribuicao direta pelo admin',
+        }),
+      );
     });
 
     it('should throw NotFoundException when IP does not exist', async () => {
       ipRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.assign('invalid-id', assignIpDto)).rejects.toThrow(
+      await expect(service.assign('invalid-id', assignIpDto, mockAdminUser)).rejects.toThrow(
         new NotFoundException('IP com ID "invalid-id" nao encontrado'),
       );
     });
@@ -190,7 +215,7 @@ describe('IpsService', () => {
       const ipInUse = { ...mockIp, status: IpStatus.IN_USE };
       ipRepository.findOne.mockResolvedValue(ipInUse as any);
 
-      await expect(service.assign(mockIp.id, assignIpDto)).rejects.toThrow(
+      await expect(service.assign(mockIp.id, assignIpDto, mockAdminUser)).rejects.toThrow(
         new ConflictException(`Endereco IP ${mockIp.address} ja esta em uso`),
       );
     });
@@ -199,7 +224,7 @@ describe('IpsService', () => {
       ipRepository.findOne.mockResolvedValue({ ...mockIp, room: mockRoom } as any);
       companyRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.assign(mockIp.id, assignIpDto)).rejects.toThrow(
+      await expect(service.assign(mockIp.id, assignIpDto, mockAdminUser)).rejects.toThrow(
         new NotFoundException(`Empresa com ID "${assignIpDto.companyId}" nao encontrada`),
       );
     });
@@ -209,7 +234,7 @@ describe('IpsService', () => {
       ipRepository.findOne.mockResolvedValue({ ...mockIp, room: mockRoom } as any);
       companyRepository.findOne.mockResolvedValue({ ...mockCompany, room: differentRoom } as any);
 
-      await expect(service.assign(mockIp.id, assignIpDto)).rejects.toThrow(
+      await expect(service.assign(mockIp.id, assignIpDto, mockAdminUser)).rejects.toThrow(
         new BadRequestException('Endereco IP nao pertence a sala da empresa'),
       );
     });
@@ -217,31 +242,39 @@ describe('IpsService', () => {
 
   describe('unassign', () => {
     it('should successfully unassign IP and return DTO', async () => {
-      const ipInUse = { ...mockIp, status: IpStatus.IN_USE, macAddress: 'AA:BB:CC:DD:EE:FF' };
-      const unassignedIp = { ...mockIp, status: IpStatus.AVAILABLE, macAddress: undefined };
+      const ipInUse = { ...mockIp, status: IpStatus.IN_USE, macAddress: 'AA:BB:CC:DD:EE:FF', company: mockCompany };
+      const unassignedIp = { ...mockIp, status: IpStatus.AVAILABLE, macAddress: undefined, company: null };
 
-      ipRepository.findOneBy.mockResolvedValue(ipInUse as any);
+      // Primeiro findOne carrega IP com company, segundo para DTO
+      ipRepository.findOne
+        .mockResolvedValueOnce(ipInUse as any)
+        .mockResolvedValueOnce(unassignedIp as any);
       ipRepository.save.mockResolvedValue(unassignedIp as any);
-      ipRepository.findOne.mockResolvedValue(unassignedIp as any);
 
-      const result = await service.unassign(mockIp.id);
+      const result = await service.unassign(mockIp.id, mockAdminUser);
 
       expect(result.status).toBe(IpStatus.AVAILABLE);
       expect(result.macAddress).toBeUndefined();
+      expect(ipHistoryService.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'released',
+          notes: 'Liberacao direta pelo admin',
+        }),
+      );
     });
 
     it('should throw NotFoundException when IP does not exist', async () => {
-      ipRepository.findOneBy.mockResolvedValue(null);
+      ipRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.unassign('invalid-id')).rejects.toThrow(
+      await expect(service.unassign('invalid-id', mockAdminUser)).rejects.toThrow(
         new NotFoundException('IP com ID "invalid-id" nao encontrado'),
       );
     });
 
     it('should throw ConflictException when IP is already available', async () => {
-      ipRepository.findOneBy.mockResolvedValue(mockIp as any);
+      ipRepository.findOne.mockResolvedValue(mockIp as any);
 
-      await expect(service.unassign(mockIp.id)).rejects.toThrow(
+      await expect(service.unassign(mockIp.id, mockAdminUser)).rejects.toThrow(
         new ConflictException(`Endereco IP ${mockIp.address} ja esta disponivel`),
       );
     });

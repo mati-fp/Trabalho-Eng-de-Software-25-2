@@ -6,9 +6,12 @@ import { Room } from "src/rooms/entities/room.entity";
 import { CreateIpDto } from "./dto/create-ip.dto";
 import { AssignIpDto } from "./dto/assign-ip.dto";
 import { Company } from "src/companies/entities/company.entity";
+import { User } from "src/users/entities/user.entity";
 import { FindAllIpsDto } from "./dto/find-all-ips.dto";
 import { IpResponseDto } from "./dto/ip-response.dto";
 import { toIpResponseDto, toIpResponseDtoList } from "./ips.mapper";
+import { IpHistoryService } from "src/ip-history/ip-history.service";
+import { IpAction } from "src/ip-history/entities/ip-history.entity";
 
 @Injectable()
 export class IpsService {
@@ -19,6 +22,7 @@ export class IpsService {
     private readonly roomRepository: Repository<Room>,
     @InjectRepository(Company)
     private readonly companyRepository: Repository<Company>,
+    private readonly ipHistoryService: IpHistoryService,
   ) {}
 
   async findAll(findAllIpsDto: FindAllIpsDto): Promise<IpResponseDto[]> {
@@ -87,7 +91,7 @@ export class IpsService {
     return toIpResponseDtoList(ipsWithRelations);
   }
 
-  async assign(ipId: string, assignIpDto: AssignIpDto): Promise<IpResponseDto> {
+  async assign(ipId: string, assignIpDto: AssignIpDto, admin: User): Promise<IpResponseDto> {
     const { macAddress, companyId } = assignIpDto;
 
     // 1. Encontra o IP e sua sala
@@ -125,6 +129,17 @@ export class IpsService {
     ip.assignedAt = new Date();
 
     const savedIp = await this.ipRepository.save(ip);
+
+    // 6. Registrar no historico de auditoria
+    await this.ipHistoryService.create({
+      ip: savedIp,
+      company,
+      action: IpAction.ASSIGNED,
+      performedBy: admin,
+      macAddress,
+      notes: 'Atribuicao direta pelo admin',
+    });
+
     // Buscar IP com relacoes completas para o DTO
     const ipWithRelations = await this.ipRepository.findOne({
       where: { id: savedIp.id },
@@ -133,8 +148,12 @@ export class IpsService {
     return toIpResponseDto(ipWithRelations!);
   }
 
-  async unassign(ipId: string): Promise<IpResponseDto> {
-    const ip = await this.ipRepository.findOneBy({ id: ipId });
+  async unassign(ipId: string, admin: User): Promise<IpResponseDto> {
+    // Carregar IP com company para o log de auditoria ANTES de limpar
+    const ip = await this.ipRepository.findOne({
+      where: { id: ipId },
+      relations: ['company', 'company.user'],
+    });
     if (!ip) {
       throw new NotFoundException(`IP com ID "${ipId}" nao encontrado`);
     }
@@ -143,11 +162,32 @@ export class IpsService {
       throw new ConflictException(`Endereco IP ${ip.address} ja esta disponivel`);
     }
 
+    // Guardar dados para o historico antes de limpar
+    const previousCompany = ip.company;
+    const previousMacAddress = ip.macAddress;
+    const previousUserName = ip.userName;
+
+    // Registrar no historico de auditoria
+    if (previousCompany) {
+      await this.ipHistoryService.create({
+        ip,
+        company: previousCompany,
+        action: IpAction.RELEASED,
+        performedBy: admin,
+        macAddress: previousMacAddress,
+        userName: previousUserName,
+        notes: 'Liberacao direta pelo admin',
+      });
+    }
+
+    // Limpar campos do IP
     ip.status = IpStatus.AVAILABLE;
     ip.macAddress = undefined as any;
+    ip.userName = undefined as any;
     ip.company = undefined as any;
     ip.assignedAt = undefined as any;
     ip.expiresAt = undefined as any;
+    ip.lastRenewedAt = undefined as any;
     ip.isTemporary = false;
 
     const savedIp = await this.ipRepository.save(ip);

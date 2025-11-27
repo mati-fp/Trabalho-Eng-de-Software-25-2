@@ -11,19 +11,22 @@ import { CompanyResponseDto } from './dto/company-response.dto';
 import { toCompanyResponseDto, toCompanyResponseDtoList } from './companies.mapper';
 import { IpResponseDto } from 'src/ips/dto/ip-response.dto';
 import { toIpResponseDtoList } from 'src/ips/ips.mapper';
+import { IpHistoryService } from 'src/ip-history/ip-history.service';
+import { IpAction } from 'src/ip-history/entities/ip-history.entity';
 
 @Injectable()
 export class CompaniesService {
   constructor(
-  @InjectRepository(Company)
-  private readonly companyRepository: Repository<Company>,
-  @InjectRepository(Room)
-  private readonly roomRepository: Repository<Room>,
-  @InjectRepository(User)
-  private readonly userRepository: Repository<User>,
-  @InjectRepository(Ip)
-  private readonly ipRepository: Repository<Ip>,
-  private dataSource: DataSource,
+    @InjectRepository(Company)
+    private readonly companyRepository: Repository<Company>,
+    @InjectRepository(Room)
+    private readonly roomRepository: Repository<Room>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(Ip)
+    private readonly ipRepository: Repository<Ip>,
+    private readonly ipHistoryService: IpHistoryService,
+    private dataSource: DataSource,
   ) {}
 
   async findAll(): Promise<CompanyResponseDto[]> {
@@ -107,7 +110,7 @@ export class CompaniesService {
     return toCompanyResponseDto(fullCompany!);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, admin: User): Promise<void> {
     // 1. Iniciar a transação para garantir a consistência de todas as operações
     await this.dataSource.transaction(async (transactionalEntityManager) => {
       // 2. Encontrar a empresa e carregar suas relações ('user' e 'room')
@@ -126,14 +129,28 @@ export class CompaniesService {
       // company: { id } no find() não encontraria a empresa (já "deletada"),
       // fazendo com que os IPs não fossem liberados.
       const ipsToRelease = await transactionalEntityManager.find(Ip, {
-        select: ['id'],
         where: {
           company: { id: company.id }, // Filtra por empresa, não por sala
           status: IpStatus.IN_USE,
         },
+        relations: ['room'], // Carregar room para o log de auditoria
       });
 
       if (ipsToRelease.length > 0) {
+        // 3.1 Criar logs de auditoria para cada IP liberado
+        for (const ip of ipsToRelease) {
+          await this.ipHistoryService.create({
+            ip,
+            company,
+            action: IpAction.RELEASED,
+            performedBy: admin,
+            macAddress: ip.macAddress,
+            userName: ip.userName,
+            notes: `IP liberado automaticamente devido à remoção da empresa "${company.user?.name || company.id}"`,
+          });
+        }
+
+        // 3.2 Atualizar os IPs para status AVAILABLE
         const ipIdsToRelease = ipsToRelease.map(ip => ip.id);
 
         await transactionalEntityManager.update(Ip,
@@ -145,6 +162,7 @@ export class CompaniesService {
             userName: undefined,
             assignedAt: undefined,
             expiresAt: undefined,
+            lastRenewedAt: undefined,
             isTemporary: false,
           }
         );

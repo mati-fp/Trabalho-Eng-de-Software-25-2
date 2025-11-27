@@ -7,6 +7,7 @@ import { IpRequest, IpRequestStatus, IpRequestType } from './entities/ip-request
 import { Ip, IpStatus } from '../ips/entities/ip.entity';
 import { Company } from '../companies/entities/company.entity';
 import { IpHistoryService } from '../ip-history/ip-history.service';
+import { EmailService } from '../email/email.service';
 import { UserRole } from '../users/entities/user.entity';
 
 describe('IpRequestsService', () => {
@@ -15,6 +16,7 @@ describe('IpRequestsService', () => {
   let ipRepository: jest.Mocked<Repository<Ip>>;
   let companyRepository: jest.Mocked<Repository<Company>>;
   let ipHistoryService: jest.Mocked<IpHistoryService>;
+  let emailService: jest.Mocked<EmailService>;
   let dataSource: jest.Mocked<DataSource>;
   let mockQueryRunner: jest.Mocked<QueryRunner>;
 
@@ -38,9 +40,17 @@ describe('IpRequestsService', () => {
     number: 101,
   };
 
+  const mockCompanyUser = {
+    id: 'user-uuid-123',
+    email: 'company@test.com',
+    name: 'Company User',
+    role: UserRole.COMPANY,
+  };
+
   const mockCompany = {
     id: 'company-uuid-456',
     room: mockRoom,
+    user: mockCompanyUser,
   };
 
   const mockIp = {
@@ -109,6 +119,14 @@ describe('IpRequestsService', () => {
           },
         },
         {
+          provide: EmailService,
+          useValue: {
+            sendIpRequestConfirmation: jest.fn(),
+            sendIpApproved: jest.fn(),
+            sendIpRejected: jest.fn(),
+          },
+        },
+        {
           provide: DataSource,
           useValue: {
             createQueryRunner: jest.fn(() => mockQueryRunner),
@@ -122,6 +140,7 @@ describe('IpRequestsService', () => {
     ipRepository = module.get(getRepositoryToken(Ip)) as jest.Mocked<Repository<Ip>>;
     companyRepository = module.get(getRepositoryToken(Company)) as jest.Mocked<Repository<Company>>;
     ipHistoryService = module.get(IpHistoryService) as jest.Mocked<IpHistoryService>;
+    emailService = module.get(EmailService) as jest.Mocked<EmailService>;
     dataSource = module.get(DataSource) as jest.Mocked<DataSource>;
   });
 

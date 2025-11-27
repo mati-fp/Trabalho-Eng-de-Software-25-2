@@ -12,6 +12,7 @@ import { Company } from '../companies/entities/company.entity';
 import { User } from '../users/entities/user.entity';
 import { IpHistoryService } from '../ip-history/ip-history.service';
 import { IpAction } from '../ip-history/entities/ip-history.entity';
+import { EmailService } from '../email/email.service';
 import { CreateIpRequestDto } from './dto/create-ip-request.dto';
 import { ApproveIpRequestDto } from './dto/approve-ip-request.dto';
 import { RejectIpRequestDto } from './dto/reject-ip-request.dto';
@@ -28,6 +29,7 @@ export class IpRequestsService {
     @InjectRepository(Company)
     private companyRepository: Repository<Company>,
     private ipHistoryService: IpHistoryService,
+    private emailService: EmailService,
     private dataSource: DataSource,
   ) {}
 
@@ -112,6 +114,22 @@ export class IpRequestsService {
       where: { id: savedRequest.id },
       relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
     });
+
+    // Enviar email de confirmacao de solicitacao
+    await this.emailService.sendIpRequestConfirmation({
+      companyName: company.user.name,
+      companyEmail: company.user.email,
+      requestType: createIpRequestDto.requestType,
+      justification: createIpRequestDto.justification,
+      macAddress: createIpRequestDto.macAddress,
+      userName: createIpRequestDto.userName,
+      isTemporary: createIpRequestDto.isTemporary,
+      expirationDate: createIpRequestDto.expirationDate
+        ? new Date(createIpRequestDto.expirationDate)
+        : undefined,
+      requestDate: savedRequest.requestDate,
+    });
+
     return toIpRequestResponseDto(requestWithRelations!);
   }
 
@@ -291,6 +309,19 @@ export class IpRequestsService {
         where: { id: savedRequest.id },
         relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
       });
+
+      // Enviar email de aprovacao
+      await this.emailService.sendIpApproved({
+        companyName: companyWithRoom.user.name,
+        companyEmail: companyWithRoom.user.email,
+        ipAddress: ip.address,
+        macAddress: request.macAddress,
+        userName: request.userName,
+        requestType: request.requestType,
+        expirationDate: request.expirationDate,
+        approvedAt: savedRequest.responseDate,
+      });
+
       return toIpRequestResponseDto(requestWithRelations!);
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -344,6 +375,24 @@ export class IpRequestsService {
       where: { id: savedRequest.id },
       relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
     });
+
+    // Buscar company com user para enviar email
+    const companyWithUser = await this.companyRepository.findOne({
+      where: { id: request.company.id },
+      relations: ['user'],
+    });
+
+    // Enviar email de rejeicao
+    if (companyWithUser?.user) {
+      await this.emailService.sendIpRejected({
+        companyName: companyWithUser.user.name,
+        companyEmail: companyWithUser.user.email,
+        requestType: request.requestType,
+        rejectionReason: rejectDto.rejectionReason,
+        rejectedAt: savedRequest.responseDate,
+      });
+    }
+
     return toIpRequestResponseDto(requestWithRelations!);
   }
 

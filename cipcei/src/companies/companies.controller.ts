@@ -125,7 +125,7 @@ export class CompaniesController {
   @ApiResponse({ status: 204, description: 'Empresa removida com sucesso' })
   @ApiResponse({ status: 401, description: 'Nao autenticado' })
   @ApiResponse({ status: 404, description: 'Empresa nao encontrada' })
-  async remove(@Param('id') id: string): Promise<void> {
-    return this.companiesService.remove(id);
+  async remove(@Param('id') id: string, @Request() req): Promise<void> {
+    return this.companiesService.remove(id, req.user);
   }
 }

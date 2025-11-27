@@ -7,6 +7,7 @@ import { TypeOrmModule, getDataSourceToken } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { JwtService, JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { ThrottlerModule } from '@nestjs/throttler';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { newDb, DataType } = require('pg-mem');
 
@@ -119,6 +120,13 @@ describe('CIPCEI Backend E2E Tests', () => {
           secret: 'test-jwt-secret-key-for-e2e-testing',
           signOptions: { expiresIn: '1h' },
         }),
+        ThrottlerModule.forRoot([
+          {
+            name: 'login',
+            ttl: 60000,
+            limit: 5,
+          },
+        ]),
         AuthModule,
         UsersModule,
         CompaniesModule,
@@ -312,6 +320,7 @@ describe('CIPCEI Backend E2E Tests', () => {
           .set('Authorization', `Bearer ${adminToken}`)
           .expect(200);
 
+        // Resposta como array simples
         expect(Array.isArray(response.body)).toBe(true);
         expect(response.body.length).toBeGreaterThan(0);
       });
@@ -508,6 +517,7 @@ describe('CIPCEI Backend E2E Tests', () => {
           .set('Authorization', `Bearer ${adminToken}`)
           .expect(200);
 
+        // Resposta como array simples
         expect(Array.isArray(response.body)).toBe(true);
         expect(response.body.length).toBeGreaterThan(0);
       });
@@ -518,6 +528,7 @@ describe('CIPCEI Backend E2E Tests', () => {
           .set('Authorization', `Bearer ${adminToken}`)
           .expect(200);
 
+        // Resposta como array simples
         expect(Array.isArray(response.body)).toBe(true);
       });
     });
@@ -538,7 +549,10 @@ describe('CIPCEI Backend E2E Tests', () => {
           .set('Authorization', `Bearer ${adminToken}`)
           .expect(200);
 
-        expect(Array.isArray(response.body)).toBe(true);
+        // Resposta paginada com data e meta
+        expect(response.body).toHaveProperty('data');
+        expect(response.body).toHaveProperty('meta');
+        expect(Array.isArray(response.body.data)).toBe(true);
       });
     });
   });
@@ -621,6 +635,7 @@ describe('CIPCEI Backend E2E Tests', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
+      // Resposta como array simples
       expect(Array.isArray(response.body)).toBe(true);
     });
 

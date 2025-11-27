@@ -193,3 +193,18 @@ export interface IpHistory {
   performedBy: IpHistoryPerformedBy;
 }
 
+// Pagination types matching the backend PaginatedResponseDto
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: PaginationMeta;
+}
+

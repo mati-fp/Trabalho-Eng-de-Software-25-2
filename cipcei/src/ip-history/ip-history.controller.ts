@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Param, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { IpHistoryService } from './ip-history.service';
 import { FindIpHistoryDto } from './dto/find-ip-history.dto';
@@ -7,6 +7,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
+import { PaginatedResponseDto } from '../common/dto/paginated-response.dto';
 
 @ApiTags('IP History')
 @ApiBearerAuth()
@@ -17,11 +18,20 @@ export class IpHistoryController {
 
   @Get()
   @Roles([UserRole.ADMIN])
-  @ApiOperation({ summary: 'Listar histórico de IPs com filtros (Admin)' })
-  @ApiResponse({ status: 200, description: 'Histórico de IPs retornado', type: [IpHistoryResponseDto] })
-  @ApiResponse({ status: 401, description: 'Não autenticado' })
-  async findAll(@Query() filters: FindIpHistoryDto): Promise<IpHistoryResponseDto[]> {
+  @ApiOperation({ summary: 'Listar historico de IPs com filtros e paginacao (Admin)' })
+  @ApiResponse({ status: 200, description: 'Historico de IPs retornado com paginacao' })
+  @ApiResponse({ status: 401, description: 'Nao autenticado' })
+  async findAll(@Query() filters: FindIpHistoryDto): Promise<PaginatedResponseDto<IpHistoryResponseDto>> {
     return this.ipHistoryService.findAll(filters);
+  }
+
+  @Get('my-history')
+  @Roles([UserRole.COMPANY])
+  @ApiOperation({ summary: 'Ver historico de IPs da propria empresa (Company)' })
+  @ApiResponse({ status: 200, description: 'Historico da empresa retornado', type: [IpHistoryResponseDto] })
+  @ApiResponse({ status: 401, description: 'Nao autenticado' })
+  async getMyHistory(@Request() req): Promise<IpHistoryResponseDto[]> {
+    return this.ipHistoryService.findByCompany(req.user.company.id);
   }
 
   @Get('company/:companyId')

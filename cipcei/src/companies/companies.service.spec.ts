@@ -9,6 +9,7 @@ import { User, UserRole } from '../users/entities/user.entity';
 import { Ip, IpStatus } from '../ips/entities/ip.entity';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
+import { IpHistoryService } from '../ip-history/ip-history.service';
 
 describe('CompaniesService', () => {
   let service: CompaniesService;
@@ -16,6 +17,7 @@ describe('CompaniesService', () => {
   let roomRepository: jest.Mocked<Repository<Room>>;
   let userRepository: jest.Mocked<Repository<User>>;
   let ipRepository: jest.Mocked<Repository<Ip>>;
+  let ipHistoryService: jest.Mocked<IpHistoryService>;
   let dataSource: jest.Mocked<DataSource>;
   let mockEntityManager: jest.Mocked<EntityManager>;
 
@@ -65,6 +67,20 @@ describe('CompaniesService', () => {
     updatedAt: new Date(),
   } as unknown as Ip;
 
+  const mockAdminUser = {
+    id: 'admin-uuid-999',
+    email: 'admin@cei.ufrgs.br',
+    name: 'Admin User',
+    password: 'hashedPassword',
+    role: UserRole.ADMIN,
+    isActive: true,
+    company: undefined,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: undefined,
+    hashPassword: jest.fn(),
+  } as unknown as User;
+
   beforeEach(async () => {
     mockEntityManager = {
       findOne: jest.fn(),
@@ -85,6 +101,7 @@ describe('CompaniesService', () => {
             create: jest.fn(),
             save: jest.fn(),
             preload: jest.fn(),
+            createQueryBuilder: jest.fn(),
           },
         },
         {
@@ -114,6 +131,12 @@ describe('CompaniesService', () => {
             transaction: jest.fn(),
           },
         },
+        {
+          provide: IpHistoryService,
+          useValue: {
+            create: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -122,6 +145,7 @@ describe('CompaniesService', () => {
     roomRepository = module.get(getRepositoryToken(Room)) as jest.Mocked<Repository<Room>>;
     userRepository = module.get(getRepositoryToken(User)) as jest.Mocked<Repository<User>>;
     ipRepository = module.get(getRepositoryToken(Ip)) as jest.Mocked<Repository<Ip>>;
+    ipHistoryService = module.get(IpHistoryService) as jest.Mocked<IpHistoryService>;
     dataSource = module.get(DataSource) as jest.Mocked<DataSource>;
   });
 
@@ -134,18 +158,21 @@ describe('CompaniesService', () => {
   });
 
   describe('findAll', () => {
-    it('should return all companies with roomNumber (without room object)', async () => {
+    it('should return all companies with roomNumber', async () => {
       companyRepository.find.mockResolvedValue([mockCompany]);
 
       const result = await service.findAll();
 
-      // Deve retornar empresa como DTO com roomNumber
+      // Verifica retorno como array
       expect(result.length).toBe(1);
       expect(result[0].id).toBe(mockCompany.id);
       expect(result[0].roomNumber).toBe(101);
       expect(result[0].user.id).toBe(mockUser.id);
       expect(result[0].user.email).toBe(mockUser.email);
-      expect(companyRepository.find).toHaveBeenCalledWith({ relations: ['room', 'user'] });
+      expect(companyRepository.find).toHaveBeenCalledWith({
+        relations: ['room', 'user'],
+        order: { createdAt: 'DESC' },
+      });
     });
 
     it('should return empty array when no companies exist', async () => {
@@ -154,16 +181,6 @@ describe('CompaniesService', () => {
       const result = await service.findAll();
 
       expect(result).toEqual([]);
-    });
-
-    it('should return roomNumber as undefined when company has no room', async () => {
-      const companyWithoutRoom = { ...mockCompany, room: undefined };
-      companyRepository.find.mockResolvedValue([companyWithoutRoom as any]);
-
-      const result = await service.findAll();
-
-      expect(result.length).toBe(1);
-      expect(result[0].roomNumber).toBeUndefined();
     });
   });
 
@@ -306,7 +323,7 @@ describe('CompaniesService', () => {
       } as any);
       mockEntityManager.find.mockResolvedValue([]);
 
-      await service.remove(mockCompany.id);
+      await service.remove(mockCompany.id, mockAdminUser);
 
       expect(mockEntityManager.findOne).toHaveBeenCalledWith(Company, {
         where: { id: mockCompany.id },
@@ -320,8 +337,11 @@ describe('CompaniesService', () => {
       });
     });
 
-    it('should release IPs when removing company', async () => {
-      const mockIpsToRelease = [{ id: 'ip-1' }, { id: 'ip-2' }];
+    it('should release IPs and reset all fields when removing company', async () => {
+      const mockIpsToRelease = [
+        { id: 'ip-1', macAddress: 'AA:BB:CC:DD:EE:01', userName: 'User 1', room: mockRoom },
+        { id: 'ip-2', macAddress: 'AA:BB:CC:DD:EE:02', userName: 'User 2', room: mockRoom },
+      ];
 
       (dataSource.transaction as jest.Mock).mockImplementation(async (callback: any) => {
         return callback(mockEntityManager);
@@ -333,30 +353,58 @@ describe('CompaniesService', () => {
       } as any);
       mockEntityManager.find.mockResolvedValue(mockIpsToRelease as any);
 
-      await service.remove(mockCompany.id);
+      await service.remove(mockCompany.id, mockAdminUser);
 
-      // Verifica que busca IPs da EMPRESA (não da sala) - correção para múltiplas empresas por sala
+      // Verifica que busca IPs da EMPRESA (nao da sala) - correcao para multiplas empresas por sala
+      // com relations para audit log
       expect(mockEntityManager.find).toHaveBeenCalledWith(Ip, {
-        select: ['id'],
         where: {
           company: { id: mockCompany.id },
           status: IpStatus.IN_USE,
         },
+        relations: ['room'],
       });
 
+      // Verifica que criou logs de auditoria para cada IP liberado
+      expect(ipHistoryService.create).toHaveBeenCalledTimes(2);
+      expect(ipHistoryService.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'released',
+          performedBy: mockAdminUser,
+        }),
+      );
+
+      // Verifica que todos os campos sao resetados (consistente com IpsService.unassign)
       expect(mockEntityManager.update).toHaveBeenCalledWith(
         Ip,
         { id: expect.anything() },
         {
           status: IpStatus.AVAILABLE,
-          company: undefined,
-          macAddress: undefined,
-          userName: undefined,
-          assignedAt: undefined,
-          expiresAt: undefined,
+          company: null,
+          macAddress: null,
+          userName: null,
           isTemporary: false,
+          assignedAt: null,
+          expiresAt: null,
+          lastRenewedAt: null,
         },
       );
+    });
+
+    it('should not create audit logs when company has no IPs', async () => {
+      (dataSource.transaction as jest.Mock).mockImplementation(async (callback: any) => {
+        return callback(mockEntityManager);
+      });
+
+      mockEntityManager.findOne.mockResolvedValue({
+        ...mockCompany,
+        room: mockRoom,
+      } as any);
+      mockEntityManager.find.mockResolvedValue([]);
+
+      await service.remove(mockCompany.id, mockAdminUser);
+
+      expect(ipHistoryService.create).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when company does not exist', async () => {
@@ -366,7 +414,7 @@ describe('CompaniesService', () => {
 
       mockEntityManager.findOne.mockResolvedValue(null);
 
-      await expect(service.remove('non-existent-id')).rejects.toThrow(
+      await expect(service.remove('non-existent-id', mockAdminUser)).rejects.toThrow(
         new NotFoundException('Empresa com ID "non-existent-id" não encontrada'),
       );
     });

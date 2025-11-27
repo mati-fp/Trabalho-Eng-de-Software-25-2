@@ -24,6 +24,7 @@ import IpActionsMenu from "./components/IpActionsMenu";
 import { CompaniesAPI } from "@/infra/companies";
 import { getIpStatusBadge, isIpExpired } from "@/components/ui/table-badge";
 import { formatDate } from "@/lib/utils";
+import Pagination from "@/components/ui/pagination";
 
 type SortField = "address" | "status";
 type SortOrder = "asc" | "desc";
@@ -36,7 +37,6 @@ export default function IpsPage() {
 
   // Filter states
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [filterExpiredIps, setFilterExpiredIps] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Sorting states
@@ -45,7 +45,7 @@ export default function IpsPage() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 15;
 
   // Fetch IPs from API
   useEffect(() => {
@@ -56,13 +56,9 @@ export default function IpsPage() {
 
         const params: FindAllIpsParams = {};
 
-        if (statusFilter === "expired") {
-          setFilterExpiredIps(true);
-        }
-        if (!["expired", "all"].includes(statusFilter)) {
+        if (statusFilter !== "all") {
           params.status = statusFilter as IpStatus;
         }
-
         const data = await CompaniesAPI.getMyIps({});
         setIps(data);
         setFilteredIps(data);
@@ -87,9 +83,6 @@ export default function IpsPage() {
         ip.address.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    if (filterExpiredIps) {
-      result = result.filter((ip) => isIpExpired(ip.expiresAt));
-    }
 
     // Apply sorting
     result.sort((a, b) => {
@@ -106,7 +99,7 @@ export default function IpsPage() {
 
     setFilteredIps(result);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [ips, searchQuery, sortField, sortOrder, filterExpiredIps]);
+  }, [ips, searchQuery, sortField, sortOrder]);
 
   // Pagination
   const totalPages = Math.ceil(filteredIps.length / itemsPerPage);
@@ -127,6 +120,23 @@ export default function IpsPage() {
     } else {
       setSortField(field);
       setSortOrder("asc");
+    }
+  };
+
+  // Refresh IPs list
+  const handleRefreshIps = async () => {
+    try {
+      setError(null);
+      const params: FindAllIpsParams = {};
+      if (statusFilter !== "all") {
+        params.status = statusFilter as IpStatus;
+      }
+      const data = await CompaniesAPI.getMyIps({});
+      setIps(data);
+      setFilteredIps(data);
+    } catch (err) {
+      setError("Erro ao atualizar IPs. Tente novamente.");
+      console.error("Error refreshing IPs:", err);
     }
   };
 
@@ -161,7 +171,6 @@ export default function IpsPage() {
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="available">Disponível</SelectItem>
                 <SelectItem value="in_use">Alocado</SelectItem>
-                <SelectItem value="expired">Expirado</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -250,7 +259,7 @@ export default function IpsPage() {
                       {ip.expiresAt ? formatDate(ip.expiresAt) : <span className="text-muted-foreground">-</span>}
                     </TableCell>
                     <TableCell className="text-center">
-                      <IpActionsMenu ip={ip} />
+                      <IpActionsMenu ip={ip} onActionComplete={handleRefreshIps} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -258,37 +267,13 @@ export default function IpsPage() {
             </Table>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-border">
-                <div className="text-sm text-muted-foreground">
-                  Mostrando {startIndex + 1} a {Math.min(endIndex, filteredIps.length)} de{" "}
-                  {filteredIps.length} resultados
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    Anterior
-                  </Button>
-                  <div className="flex items-center px-3 text-sm text-muted-foreground">
-                    Página {currentPage} de {totalPages}
-                  </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                  >
-                    Próxima
-                  </Button>
-                </div>
-              </div>
-            )}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredIps.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+            />
           </>
         )}
       </div>

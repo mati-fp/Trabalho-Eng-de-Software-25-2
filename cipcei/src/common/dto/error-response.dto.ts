@@ -56,6 +56,17 @@ export class ForbiddenErrorDto extends ErrorResponseDto {
   declare error: string;
 }
 
+export class TooManyRequestsErrorDto extends ErrorResponseDto {
+  @ApiProperty({ example: 429 })
+  declare statusCode: 429;
+
+  @ApiProperty({ example: 'Muitas tentativas. Tente novamente em 1 minuto.' })
+  declare message: string;
+
+  @ApiProperty({ example: 'Too Many Requests' })
+  declare error: string;
+}
+
 export class NotFoundErrorDto extends ErrorResponseDto {
   @ApiProperty({ example: 404 })
   declare statusCode: 404;

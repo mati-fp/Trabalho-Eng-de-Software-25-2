@@ -1,4 +1,4 @@
-import { Patch, Param, Body, Controller, Get, Query } from '@nestjs/common';
+import { Patch, Param, Body, Controller, Get, Query, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { AssignIpDto } from './dto/assign-ip.dto';
 import { IpsService } from './ips.service';
@@ -23,17 +23,17 @@ export class IpsController {
   @ApiResponse({ status: 400, description: 'Dados inválidos ou IP já está em uso' })
   @ApiResponse({ status: 401, description: 'Não autenticado' })
   @ApiResponse({ status: 404, description: 'IP ou empresa não encontrados' })
-  async assign(@Param('id') id: string, @Body() assignIpDto: AssignIpDto): Promise<IpResponseDto> {
-    return this.ipsService.assign(id, assignIpDto);
+  async assign(@Param('id') id: string, @Body() assignIpDto: AssignIpDto, @Request() req): Promise<IpResponseDto> {
+    return this.ipsService.assign(id, assignIpDto, req.user);
   }
 
   @Get()
   @ApiOperation({
     summary: 'Listar IPs com filtros',
-    description: 'Retorna lista de endereços IP com filtros opcionais por status, empresa ou sala',
+    description: 'Retorna lista de enderecos IP com filtros opcionais por status, empresa ou sala',
   })
   @ApiResponse({ status: 200, description: 'Lista de IPs retornada com sucesso', type: [IpResponseDto] })
-  @ApiResponse({ status: 401, description: 'Não autenticado' })
+  @ApiResponse({ status: 401, description: 'Nao autenticado' })
   async findAll(@Query() findAllIpsDto: FindAllIpsDto): Promise<IpResponseDto[]> {
     return this.ipsService.findAll(findAllIpsDto);
   }
@@ -46,7 +46,7 @@ export class IpsController {
   @ApiResponse({ status: 200, description: 'IP desatribuído com sucesso', type: IpResponseDto })
   @ApiResponse({ status: 401, description: 'Não autenticado' })
   @ApiResponse({ status: 404, description: 'IP não encontrado' })
-  async unassign(@Param('id') id: string): Promise<IpResponseDto> {
-    return this.ipsService.unassign(id);
+  async unassign(@Param('id') id: string, @Request() req): Promise<IpResponseDto> {
+    return this.ipsService.unassign(id, req.user);
   }
 }

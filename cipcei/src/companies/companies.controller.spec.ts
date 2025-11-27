@@ -47,6 +47,15 @@ describe('CompaniesController', () => {
     },
   };
 
+  const mockAdminRequest = {
+    user: {
+      id: 'admin-uuid-999',
+      email: 'admin@cei.ufrgs.br',
+      name: 'Admin User',
+      role: UserRole.ADMIN,
+    },
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CompaniesController],
@@ -308,10 +317,10 @@ describe('CompaniesController', () => {
     it('should remove a company', async () => {
       companiesService.remove.mockResolvedValue(undefined);
 
-      const result = await controller.remove(mockCompany.id);
+      const result = await controller.remove(mockCompany.id, mockAdminRequest);
 
       expect(result).toBeUndefined();
-      expect(companiesService.remove).toHaveBeenCalledWith(mockCompany.id);
+      expect(companiesService.remove).toHaveBeenCalledWith(mockCompany.id, mockAdminRequest.user);
     });
 
     it('should propagate NotFoundException from service', async () => {
@@ -319,15 +328,15 @@ describe('CompaniesController', () => {
         new NotFoundException('Company not found'),
       );
 
-      await expect(controller.remove('non-existent-id')).rejects.toThrow(NotFoundException);
+      await expect(controller.remove('non-existent-id', mockAdminRequest)).rejects.toThrow(NotFoundException);
     });
 
-    it('should call companiesService.remove with correct ID', async () => {
+    it('should call companiesService.remove with correct ID and admin user', async () => {
       companiesService.remove.mockResolvedValue(undefined);
 
-      await controller.remove('test-id');
+      await controller.remove('test-id', mockAdminRequest);
 
-      expect(companiesService.remove).toHaveBeenCalledWith('test-id');
+      expect(companiesService.remove).toHaveBeenCalledWith('test-id', mockAdminRequest.user);
     });
   });
 });

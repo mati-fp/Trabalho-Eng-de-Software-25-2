@@ -6,11 +6,13 @@ import { IpRequestsController } from './ip-requests.controller';
 import { Ip } from '../ips/entities/ip.entity';
 import { Company } from '../companies/entities/company.entity';
 import { IpHistoryModule } from '../ip-history/ip-history.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([IpRequest, Ip, Company]),
     IpHistoryModule,
+    EmailModule,
   ],
   controllers: [IpRequestsController],
   providers: [IpRequestsService],

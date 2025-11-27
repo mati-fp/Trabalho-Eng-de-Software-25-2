@@ -20,7 +20,8 @@ export function toIpResponseDto(ip: Ip): IpResponseDto {
         name: ip.company.user?.name,
       },
     } : undefined,
-    expiresAt: ip.expiresAt ?? undefined,
+    // expiresAt sempre presente na resposta (null quando nao definido)
+    expiresAt: ip.expiresAt ?? null,
   };
 }
 

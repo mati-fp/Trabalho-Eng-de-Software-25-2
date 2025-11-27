@@ -7,13 +7,15 @@ import { RoomsModule } from 'src/rooms/rooms.module';
 import { Room } from 'src/rooms/entities/room.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Ip } from 'src/ips/entities/ip.entity';
+import { IpHistoryModule } from 'src/ip-history/ip-history.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Company, Room, User, Ip]),
-    RoomsModule
+    RoomsModule,
+    IpHistoryModule,
   ],
   controllers: [CompaniesController],
-  providers: [CompaniesService]
+  providers: [CompaniesService],
 })
 export class CompaniesModule {}

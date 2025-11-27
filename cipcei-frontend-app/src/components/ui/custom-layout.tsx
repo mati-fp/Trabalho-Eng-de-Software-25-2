@@ -29,7 +29,7 @@ interface MenuItem {
 
 const menuItemsAdmin: MenuItem[] = [
   { label: "Tabela de IPs", icon: <Database className="w-5 h-5" />, href: "/admin/ips" },
-  { label: "Histórico", icon: <FileText className="w-5 h-5" />, href: "/admin/activities" },
+  { label: "Histórico", icon: <FileText className="w-5 h-5" />, href: "/admin/history/all" },
   // { label: "Home", icon: <LayoutDashboard className="w-5 h-5" />, href: "/admin/home" },
   { label: "Solicitações", icon: <Ticket className="w-5 h-5" />, href: "/admin/requests" },
   { label: "Empresas", icon: <Users className="w-5 h-5" />, href: "/admin/clients" },

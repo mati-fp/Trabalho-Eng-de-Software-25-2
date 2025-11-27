@@ -46,7 +46,16 @@ const historyToCsvRow = (item: IpHistory): string => {
   return row.join(",");
 };
 
-export const useExportIpHistory = () => {
+export type ExportType = "all" | "ip" | "company";
+
+export interface UseExportIpHistoryParams {
+  exportType?: ExportType;
+  ipId?: string;
+  
+  companyId?: string;
+}
+
+export const useExportIpHistory = (params?: UseExportIpHistoryParams) => {
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState({ current: 0, total: 0 });
 
@@ -55,25 +64,38 @@ export const useExportIpHistory = () => {
       setIsExporting(true);
       setExportProgress({ current: 0, total: 0 });
 
-      // First, get the first page to know the total number of pages
-      const firstPageResponse = await IpHistoryAPI.findAllIpHistory({
-        page: 1,
-        limit: 100,
-      });
+      const exportType = params?.exportType || "all";
+      let allHistory: IpHistory[] = [];
 
-      const totalPages = firstPageResponse.meta.totalPages;
-      const allHistory: IpHistory[] = [...firstPageResponse.data];
-
-      setExportProgress({ current: 1, total: totalPages });
-
-      // Fetch remaining pages
-      for (let page = 2; page <= totalPages; page++) {
-        const response = await IpHistoryAPI.findAllIpHistory({
-          page,
+      if (exportType === "ip" && params?.ipId) {
+        // Fetch all history for a specific IP
+        allHistory = await IpHistoryAPI.findIpHistoryByIp(params.ipId);
+        setExportProgress({ current: 1, total: 1 });
+      } else if (exportType === "company" && params?.companyId) {
+        // Fetch all history for a specific company
+        allHistory = await IpHistoryAPI.findIpHistoryByCompany(params.companyId);
+        setExportProgress({ current: 1, total: 1 });
+      } else {
+        // Fetch all history with pagination
+        const firstPageResponse = await IpHistoryAPI.findAllIpHistory({
+          page: 1,
           limit: 100,
         });
-        allHistory.push(...response.data);
-        setExportProgress({ current: page, total: totalPages });
+
+        const totalPages = firstPageResponse.meta.totalPages;
+        allHistory = [...firstPageResponse.data];
+
+        setExportProgress({ current: 1, total: totalPages });
+
+        // Fetch remaining pages
+        for (let page = 2; page <= totalPages; page++) {
+          const response = await IpHistoryAPI.findAllIpHistory({
+            page,
+            limit: 100,
+          });
+          allHistory.push(...response.data);
+          setExportProgress({ current: page, total: totalPages });
+        }
       }
 
       // Create CSV content
@@ -101,11 +123,19 @@ export const useExportIpHistory = () => {
       const link = document.createElement("a");
       link.href = url;
 
-      // Generate filename with current date
+      // Generate filename with current date and context
       const now = new Date();
       const dateStr = now.toISOString().split("T")[0];
       const timeStr = now.toTimeString().split(" ")[0].replace(/:/g, "-");
-      link.download = `historico-ips-${dateStr}-${timeStr}.csv`;
+      let filename = `historico-ips-${dateStr}-${timeStr}.csv`;
+      
+      if (exportType === "ip") {
+        filename = `historico-ip-${params?.ipId}-${dateStr}-${timeStr}.csv`;
+      } else if (exportType === "company") {
+        filename = `historico-empresa-${params?.companyId}-${dateStr}-${timeStr}.csv`;
+      }
+      
+      link.download = filename;
 
       document.body.appendChild(link);
       link.click();
@@ -120,7 +150,7 @@ export const useExportIpHistory = () => {
       setExportProgress({ current: 0, total: 0 });
       throw error;
     }
-  }, []);
+  }, [params]);
 
   return {
     exportToCsv,

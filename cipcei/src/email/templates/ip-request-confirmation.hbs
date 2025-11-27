@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmacao de Solicitacao de IP</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background-color: #003366; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+    .content { background-color: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
+    .info-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+    .info-table td { padding: 10px; border-bottom: 1px solid #ddd; }
+    .info-table td:first-child { font-weight: bold; width: 40%; background-color: #f0f0f0; }
+    .footer { background-color: #f0f0f0; padding: 15px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 5px 5px; }
+    .status { display: inline-block; padding: 5px 15px; background-color: #ffc107; color: #000; border-radius: 3px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>CIPCEI - Centro de Empreendimentos</h1>
+    <h2>Confirmacao de Solicitacao</h2>
+  </div>
+
+  <div class="content">
+    <p>Prezado(a) <strong>{{companyName}}</strong>,</p>
+
+    <p>Sua solicitacao de IP foi recebida com sucesso e esta aguardando analise pelo administrador.</p>
+
+    <p>Status: <span class="status">PENDENTE</span></p>
+
+    <h3>Detalhes da Solicitacao:</h3>
+
+    <table class="info-table">
+      <tr>
+        <td>Tipo de Solicitacao</td>
+        <td>{{requestType}}</td>
+      </tr>
+      <tr>
+        <td>Data da Solicitacao</td>
+        <td>{{requestDate}}</td>
+      </tr>
+      <tr>
+        <td>Justificativa</td>
+        <td>{{justification}}</td>
+      </tr>
+      <tr>
+        <td>Endereco MAC</td>
+        <td>{{macAddress}}</td>
+      </tr>
+      <tr>
+        <td>Nome do Usuario</td>
+        <td>{{userName}}</td>
+      </tr>
+      <tr>
+        <td>IP Temporario</td>
+        <td>{{isTemporary}}</td>
+      </tr>
+      <tr>
+        <td>Data de Expiracao</td>
+        <td>{{expirationDate}}</td>
+      </tr>
+    </table>
+
+    <p>Voce recebera um novo email assim que sua solicitacao for analisada.</p>
+
+    <p>Atenciosamente,<br>
+    <strong>Equipe CIPCEI</strong></p>
+  </div>
+
+  <div class="footer">
+    <p>Este e um email automatico. Por favor, nao responda.</p>
+    <p>Centro de Empreendimentos em Informatica - CEI/UFRGS</p>
+  </div>
+</body>
+</html>

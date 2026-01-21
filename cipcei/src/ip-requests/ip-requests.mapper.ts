@@ -14,15 +14,12 @@ export function toIpRequestResponseDto(request: IpRequest): IpRequestResponseDto
     requestDate: request.requestDate,
     expirationDate: request.expirationDate ?? undefined,
     macAddress: request.macAddress ?? undefined,
-    requestedBy: {
-      id: request.requestedBy?.id,
-      name: request.requestedBy?.name,
-      email: request.requestedBy?.email,
-    },
+    companyUser: request.userName ?? undefined,
     company: {
       id: request.company?.id,
       user: {
         name: request.company?.user?.name,
+        email: request.company?.user?.email,
       },
       roomNumber: request.company?.room?.number ?? undefined,
     },

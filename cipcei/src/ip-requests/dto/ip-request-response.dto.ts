@@ -2,29 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IpRequestType, IpRequestStatus } from '../entities/ip-request.entity';
 
 /**
- * DTO aninhado para usuario que solicitou
- */
-class RequestedByDto {
-  @ApiProperty({
-    description: 'ID do usuario que fez a solicitacao',
-    example: '550e8400-e29b-41d4-a716-446655440000',
-  })
-  id: string;
-
-  @ApiProperty({
-    description: 'Nome do usuario que fez a solicitacao',
-    example: 'Joao da Silva',
-  })
-  name: string;
-
-  @ApiProperty({
-    description: 'Email do usuario que fez a solicitacao',
-    example: 'joao@empresa.com',
-  })
-  email: string;
-}
-
-/**
  * DTO aninhado para usuario da empresa
  */
 class IpRequestCompanyUserDto {
@@ -33,6 +10,12 @@ class IpRequestCompanyUserDto {
     example: 'Empresa Exemplo LTDA',
   })
   name: string;
+
+  @ApiProperty({
+    description: 'Email da empresa',
+    example: 'contato@empresa.com',
+  })
+  email: string;
 }
 
 /**
@@ -139,10 +122,12 @@ export class IpRequestResponseDto {
   macAddress?: string;
 
   @ApiProperty({
-    description: 'Usuario que fez a solicitacao',
-    type: RequestedByDto,
+    description: 'Nome do funcionario da empresa que utilizara o IP',
+    example: 'Joao da Silva',
+    required: false,
+    nullable: true,
   })
-  requestedBy: RequestedByDto;
+  companyUser?: string;
 
   @ApiProperty({
     description: 'Empresa solicitante',

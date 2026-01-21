@@ -11,7 +11,7 @@ export class Company {
   @JoinColumn()
   user: User;
 
-  @ManyToOne(() => Room, (room) => room.companies)
+  @ManyToOne(() => Room, (room) => room.companies, { eager: true })
   @JoinColumn()
   room: Room;
 

@@ -59,7 +59,7 @@ export default function AdminHistoryCompanyPage() {
 
   // Apply local sorting and pagination
   useEffect(() => {
-    let result = [...history];
+    const result = [...history];
 
     // Apply sorting
     result.sort((a, b) => {

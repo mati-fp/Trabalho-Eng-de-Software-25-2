@@ -60,7 +60,7 @@ export default function AdminHistoryAllPage() {
 
   // Apply local sorting
   useEffect(() => {
-    let result = [...history];
+    const result = [...history];
 
     // Apply sorting
     result.sort((a, b) => {

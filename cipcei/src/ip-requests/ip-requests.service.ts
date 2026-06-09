@@ -54,14 +54,13 @@ export class IpRequestsService {
       throw new BadRequestException('Empresa não possui sala associada');
     }
 
-    // Se for renovação ou cancelamento, precisa do IP
+    // Se for cancelamento, precisa do IP
     if (
-      (createIpRequestDto.requestType === IpRequestType.RENEWAL ||
-        createIpRequestDto.requestType === IpRequestType.CANCELLATION) &&
+      createIpRequestDto.requestType === IpRequestType.CANCELLATION &&
       !createIpRequestDto.ipId
     ) {
       throw new BadRequestException(
-        'ID do IP é obrigatório para renovação ou cancelamento',
+        'ID do IP é obrigatório para cancelamento',
       );
     }
 
@@ -90,10 +89,6 @@ export class IpRequestsService {
       justification: createIpRequestDto.justification,
       macAddress: createIpRequestDto.macAddress,
       userName: createIpRequestDto.userName,
-      isTemporary: createIpRequestDto.isTemporary || false,
-      expirationDate: createIpRequestDto.expirationDate
-        ? new Date(createIpRequestDto.expirationDate)
-        : undefined,
     });
 
     const savedRequest = await this.ipRequestRepository.save(request);
@@ -123,10 +118,6 @@ export class IpRequestsService {
       justification: createIpRequestDto.justification,
       macAddress: createIpRequestDto.macAddress,
       userName: createIpRequestDto.userName,
-      isTemporary: createIpRequestDto.isTemporary,
-      expirationDate: createIpRequestDto.expirationDate
-        ? new Date(createIpRequestDto.expirationDate)
-        : undefined,
       requestDate: savedRequest.requestDate,
     });
 
@@ -210,9 +201,7 @@ export class IpRequestsService {
           ip.company = request.company;
           ip.macAddress = request.macAddress;
           ip.userName = request.userName;
-          ip.isTemporary = request.isTemporary;
           ip.assignedAt = new Date();
-          ip.expiresAt = request.expirationDate;
           await queryRunner.manager.save(ip);
 
           request.ip = ip;
@@ -225,31 +214,6 @@ export class IpRequestsService {
             performedBy: admin,
             macAddress: request.macAddress,
             userName: request.userName,
-            expirationDate: request.expirationDate,
-            notes: approveDto.notes,
-          });
-          break;
-
-        case IpRequestType.RENEWAL:
-          if (!request.ip) {
-            throw new BadRequestException('IP não encontrado na solicitação');
-          }
-
-          ip = request.ip;
-
-          // Renovar o IP
-          ip.expiresAt = request.expirationDate;
-          ip.lastRenewedAt = new Date();
-          ip.status = IpStatus.IN_USE;
-          await queryRunner.manager.save(ip);
-
-          // Registrar no histórico
-          await this.ipHistoryService.create({
-            ip,
-            company: request.company,
-            action: IpAction.RENEWED,
-            performedBy: admin,
-            expirationDate: request.expirationDate,
             notes: approveDto.notes,
           });
           break;
@@ -267,8 +231,6 @@ export class IpRequestsService {
           ip.macAddress = undefined as any;
           ip.userName = undefined as any;
           ip.assignedAt = undefined as any;
-          ip.expiresAt = undefined as any;
-          ip.isTemporary = false;
           await queryRunner.manager.save(ip);
 
           // Registrar no histórico
@@ -297,7 +259,6 @@ export class IpRequestsService {
           performedBy: admin,
           macAddress: request.macAddress,
           userName: request.userName,
-          expirationDate: request.expirationDate,
           notes: `Solicitação aprovada: ${request.requestType}`,
         });
       }
@@ -318,7 +279,6 @@ export class IpRequestsService {
         macAddress: request.macAddress,
         userName: request.userName,
         requestType: request.requestType,
-        expirationDate: request.expirationDate,
         approvedAt: savedRequest.responseDate,
       });
 

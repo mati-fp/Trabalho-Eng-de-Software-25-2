@@ -12,7 +12,6 @@ import { User } from '../../users/entities/user.entity';
 
 export enum IpRequestType {
   NEW = 'new',
-  RENEWAL = 'renewal',
   CANCELLATION = 'cancellation',
 }
 
@@ -59,9 +58,6 @@ export class IpRequest {
   @Column({ nullable: true })
   responseDate: Date;
 
-  @Column({ nullable: true })
-  expirationDate: Date;
-
   @Column({ type: 'text' })
   justification: string;
 
@@ -73,9 +69,6 @@ export class IpRequest {
 
   @Column({ nullable: true })
   userName: string;
-
-  @Column({ default: false })
-  isTemporary: boolean;
 
   @UpdateDateColumn()
   updatedAt: Date;

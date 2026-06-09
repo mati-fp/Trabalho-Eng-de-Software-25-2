@@ -17,7 +17,6 @@ import { CreateIpRequestPayload, IpRequestsAPI } from "@/infra/ip-requests";
 interface FormErrors {
   macAddress?: string;
   roomLocation?: string;
-  usagePeriod?: string;
   justification?: string;
 }
 
@@ -27,9 +26,7 @@ export default function RequestIpPage() {
 
   const [macAddress, setMacAddress] = useState("");
   const [roomLocation, setRoomLocation] = useState("");
-  const [usagePeriod, setUsagePeriod] = useState<string>("");
   const [justification, setJustification] = useState("");
-  const [isTemporary, setIsTemporary] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
 
@@ -53,23 +50,6 @@ export default function RequestIpPage() {
     // Validar Sala/Local
     if (!roomLocation.trim()) {
       newErrors.roomLocation = "Sala é obrigatório";
-    }
-
-    // Validar Prazo de Utilização (Data) - apenas se for temporária
-    if (isTemporary) {
-      if (!usagePeriod || usagePeriod.trim() === "") {
-        newErrors.usagePeriod = "Data de expiração é obrigatória";
-      } else {
-        const selectedDate = new Date(usagePeriod);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if (isNaN(selectedDate.getTime())) {
-          newErrors.usagePeriod = "Data inválida";
-        } else if (selectedDate < today) {
-          newErrors.usagePeriod = "A data de expiração deve ser no futuro";
-        }
-      }
     }
 
     // Validar Justificativa
@@ -97,8 +77,6 @@ export default function RequestIpPage() {
       justification: justification.trim(),
       macAddress: macAddress.trim(),
       userName: profile?.name,
-      isTemporary: isTemporary,
-      expirationDate: isTemporary ? usagePeriod : undefined,
     };
 
     // Apenas printar o payload conforme solicitado
@@ -184,64 +162,6 @@ export default function RequestIpPage() {
                     <p className="text-sm text-destructive">{errors.roomLocation}</p>
                   )}
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="isTemporary"
-                    checked={isTemporary}
-                    onChange={(e) => {
-                      setIsTemporary(e.target.checked);
-                      if (!e.target.checked) {
-                        // Limpar erro de data quando desmarcar
-                        if (errors.usagePeriod) {
-                          setErrors({ ...errors, usagePeriod: undefined });
-                        }
-                      } else {
-                        // Definir data padrão quando marcar
-                        const today = new Date();
-                        const defaultDate = new Date(today);
-                        defaultDate.setDate(today.getDate() + 30);
-                        setUsagePeriod(defaultDate.toISOString().split("T")[0]);
-                      }
-                    }}
-                    className="h-4 w-4 rounded border-input text-primary focus:ring-ring focus:ring-offset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  />
-                  <label
-                    htmlFor="isTemporary"
-                    className="text-sm font-medium text-foreground cursor-pointer"
-                  >
-                    Solicitação temporária
-                  </label>
-                </div>
-                {isTemporary && (
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="usagePeriod"
-                      className="text-sm font-medium text-foreground"
-                    >
-                      Data de Expiração <span className="text-destructive">*</span>
-                    </label>
-                    <Input
-                      id="usagePeriod"
-                      type="date"
-                      min={new Date().toISOString().split("T")[0]}
-                      value={usagePeriod}
-                      onChange={(e) => {
-                        setUsagePeriod(e.target.value);
-                        if (errors.usagePeriod) {
-                          setErrors({ ...errors, usagePeriod: undefined });
-                        }
-                      }}
-                      className={errors.usagePeriod ? "border-destructive" : ""}
-                      aria-invalid={!!errors.usagePeriod}
-                    />
-                    {errors.usagePeriod && (
-                      <p className="text-sm text-destructive">{errors.usagePeriod}</p>
-                    )}
-                  </div>
-                )}
               </div>
               <div className="space-y-2">
                 <label

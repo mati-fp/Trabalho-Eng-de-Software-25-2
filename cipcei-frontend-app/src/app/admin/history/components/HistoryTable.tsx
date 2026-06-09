@@ -120,7 +120,6 @@ export default function HistoryTable({
             <TableHead className="text-center">Empresa</TableHead>
             <TableHead className="text-center">Executado por</TableHead>
             <TableHead className="text-center">Endereço MAC</TableHead>
-            <TableHead className="text-center">Data de Expiração</TableHead>
             <TableHead className="text-center">Notas</TableHead>
           </TableRow>
         </TableHeader>
@@ -174,13 +173,6 @@ export default function HistoryTable({
               </TableCell>
               <TableCell className="text-center">
                 {item.macAddress || (
-                  <span className="text-muted-foreground">-</span>
-                )}
-              </TableCell>
-              <TableCell className="text-center">
-                {item.expirationDate ? (
-                  formatDate(item.expirationDate)
-                ) : (
                   <span className="text-muted-foreground">-</span>
                 )}
               </TableCell>

@@ -3,15 +3,13 @@
  * Request payloads for IP request-related API calls
  */
 
-export type IpRequestType = "new" | "renewal" | "cancellation";
+export type IpRequestType = "new" | "cancellation";
 
 export interface CreateIpRequestPayload {
   requestType: IpRequestType;
   justification: string;
   macAddress?: string;
   userName?: string;
-  isTemporary?: boolean;
-  expirationDate?: string;
   ipId?: string;
 }
 

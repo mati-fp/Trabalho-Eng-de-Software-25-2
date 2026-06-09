@@ -21,9 +21,7 @@ const getActionLabel = (action: string): string => {
   const actionMap: Record<string, string> = {
     assigned: "Atribuído",
     released: "Liberado",
-    renewed: "Renovado",
     cancelled: "Cancelado",
-    expired: "Expirado",
     requested: "Solicitado",
     approved: "Aprovado",
     rejected: "Rejeitado",
@@ -40,7 +38,6 @@ const historyToCsvRow = (item: IpHistory): string => {
     escapeCsvValue(item.company?.user?.name || "-"),
     escapeCsvValue(item.performedBy.name),
     escapeCsvValue(item.macAddress || "-"),
-    escapeCsvValue(item.expirationDate ? formatDate(item.expirationDate) : "-"),
     escapeCsvValue(item.notes || "-"),
   ];
   return row.join(",");
@@ -106,7 +103,6 @@ export const useExportIpHistory = (params?: UseExportIpHistoryParams) => {
         "Empresa",
         "Executado por",
         "Endereço MAC",
-        "Data de Expiração",
         "Notas",
       ];
 

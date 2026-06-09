@@ -6,9 +6,7 @@
 export type IpAction =
   | "assigned"
   | "released"
-  | "renewed"
   | "cancelled"
-  | "expired"
   | "requested"
   | "approved"
   | "rejected";

@@ -162,10 +162,7 @@ export class CompaniesService {
             company: null as any,
             macAddress: null as any,
             userName: null as any,
-            isTemporary: false,
             assignedAt: null as any,
-            expiresAt: null as any,
-            lastRenewedAt: null as any,
           }
         );
       }
@@ -182,7 +179,7 @@ export class CompaniesService {
   }
 
   /**
-   * Company visualiza TODOS os seus IPs (ativos + expirados)
+   * Company visualiza TODOS os seus IPs
    */
   async getAllMyIps(companyId: string): Promise<IpResponseDto[]> {
     const ips = await this.ipRepository.find({
@@ -205,33 +202,6 @@ export class CompaniesService {
       relations: ['room', 'company', 'company.user'],
       order: { assignedAt: 'DESC' },
     });
-    return toIpResponseDtoList(ips);
-  }
-
-  /**
-   * Company visualiza IPs que podem ser renovados
-   * (IPs temporarios expirados ou proximos de expirar - 7 dias)
-   */
-  async getRenewableIps(companyId: string): Promise<IpResponseDto[]> {
-    const sevenDaysFromNow = new Date();
-    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
-
-    const ips = await this.ipRepository
-      .createQueryBuilder('ip')
-      .leftJoinAndSelect('ip.room', 'room')
-      .leftJoinAndSelect('ip.company', 'company')
-      .leftJoinAndSelect('company.user', 'user')
-      .where('ip.companyId = :companyId', { companyId })
-      .andWhere('ip.isTemporary = :isTemporary', { isTemporary: true })
-      .andWhere(
-        '(ip.status = :expired OR (ip.expiresAt IS NOT NULL AND ip.expiresAt <= :sevenDays))',
-        {
-          expired: IpStatus.EXPIRED,
-          sevenDays: sevenDaysFromNow,
-        },
-      )
-      .orderBy('ip.expiresAt', 'ASC')
-      .getMany();
     return toIpResponseDtoList(ips);
   }
 }

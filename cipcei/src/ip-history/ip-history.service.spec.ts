@@ -79,7 +79,6 @@ describe('IpHistoryService', () => {
         macAddress: 'AA:BB:CC:DD:EE:FF',
         userName: 'Test User',
         notes: 'IP assigned',
-        expirationDate: new Date('2024-12-31'),
       };
 
       repository.create.mockReturnValue(mockHistory as any);
@@ -114,23 +113,6 @@ describe('IpHistoryService', () => {
 
       expect(result).toBeDefined();
       expect(repository.create).toHaveBeenCalledWith(minimalData);
-    });
-
-    it('should create history for RENEWED action', async () => {
-      const renewData = {
-        ip: mockIp as any,
-        company: mockCompany as any,
-        action: IpAction.RENEWED,
-        performedBy: mockUser as any,
-        expirationDate: new Date('2025-01-01'),
-      };
-
-      repository.create.mockReturnValue({ ...mockHistory, action: IpAction.RENEWED } as any);
-      repository.save.mockResolvedValue({ ...mockHistory, action: IpAction.RENEWED } as any);
-
-      const result = await service.create(renewData);
-
-      expect(result.action).toBe(IpAction.RENEWED);
     });
 
     it('should create history for RELEASED action', async () => {

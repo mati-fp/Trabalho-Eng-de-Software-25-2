@@ -93,11 +93,4 @@ export class IpResponseDto {
     nullable: true,
   })
   company?: IpCompanyDto;
-
-  @ApiProperty({
-    description: 'Data de expiracao do IP (para IPs temporarios)',
-    example: '2025-06-15T10:30:00.000Z',
-    nullable: true,
-  })
-  expiresAt: Date | null;
 }

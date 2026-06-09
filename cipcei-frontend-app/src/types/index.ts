@@ -88,7 +88,7 @@ export interface IpCompany {
   user: IpCompanyUser;
 }
 
-export type IpStatus = "available" | "in_use" | "expired";
+export type IpStatus = "available" | "in_use";
 // IP type matching the backend IpResponseDto
 export interface IP {
   id: string;
@@ -97,11 +97,10 @@ export interface IP {
   macAddress?: string;
   room?: IpRoom;
   company?: IpCompany;
-  expiresAt?: string;
 }
 
 // IP Request types
-export type IpRequestType = "new" | "renewal" | "cancellation";
+export type IpRequestType = "new" | "cancellation";
 export type IpRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
 
 // IP Request user type (nested in IpRequest)
@@ -137,7 +136,6 @@ export interface IpRequest {
   justification: string;
   rejectionReason?: string;
   requestDate: string;
-  expirationDate?: string;
   macAddress?: string;
   requestedBy: IpRequestUser;
   company: IpRequestCompany;
@@ -148,9 +146,7 @@ export interface IpRequest {
 export type IpAction =
   | "assigned"
   | "released"
-  | "renewed"
   | "cancelled"
-  | "expired"
   | "requested"
   | "approved"
   | "rejected";
@@ -187,7 +183,6 @@ export interface IpHistory {
   macAddress?: string;
   userName?: string;
   notes?: string;
-  expirationDate?: string;
   ip: IpHistoryIp;
   company?: IpHistoryCompany;
   performedBy: IpHistoryPerformedBy;

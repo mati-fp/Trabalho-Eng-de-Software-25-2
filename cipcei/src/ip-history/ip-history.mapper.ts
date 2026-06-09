@@ -12,7 +12,6 @@ export function toIpHistoryResponseDto(history: IpHistory): IpHistoryResponseDto
     macAddress: history.macAddress ?? undefined,
     userName: history.userName ?? undefined,
     notes: history.notes ?? undefined,
-    expirationDate: history.expirationDate ?? undefined,
     ip: {
       id: history.ip?.id,
       address: history.ip?.address,

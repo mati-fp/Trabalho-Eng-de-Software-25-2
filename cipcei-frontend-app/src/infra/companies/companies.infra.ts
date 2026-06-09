@@ -36,8 +36,8 @@ const getMyCompany = async (): Promise<Company> => {
   return response.data;
 };
 
-const getMyIps = async ({ type }: { type?: "active" | "renewable" }): Promise<IP[]> => {
-  const response = await api.get(`/companies/me/ips${type ? type === "active" ? "/active" : "/renewable" : ""}`);
+const getMyIps = async ({ type }: { type?: "active" } = {}): Promise<IP[]> => {
+  const response = await api.get(`/companies/me/ips${type === "active" ? "/active" : ""}`);
   return response.data;
 };
 

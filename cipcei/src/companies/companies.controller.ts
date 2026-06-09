@@ -33,15 +33,6 @@ export class CompaniesController {
   }
 
   @Roles([UserRole.COMPANY])
-  @Get('me/ips/renewable')
-  @ApiOperation({ summary: 'Ver IPs renovaveis da empresa (Company)' })
-  @ApiResponse({ status: 200, description: 'IPs renovaveis retornados', type: [IpResponseDto] })
-  @ApiResponse({ status: 401, description: 'Nao autenticado' })
-  async getMyRenewableIps(@Request() req): Promise<IpResponseDto[]> {
-    return this.companiesService.getRenewableIps(req.user.company.id);
-  }
-
-  @Roles([UserRole.COMPANY])
   @Get('me/ips')
   @ApiOperation({ summary: 'Ver todos os IPs da empresa (Company)' })
   @ApiResponse({ status: 200, description: 'IPs retornados', type: [IpResponseDto] })

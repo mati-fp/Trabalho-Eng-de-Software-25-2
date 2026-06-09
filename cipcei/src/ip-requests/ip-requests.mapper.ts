@@ -12,7 +12,6 @@ export function toIpRequestResponseDto(request: IpRequest): IpRequestResponseDto
     justification: request.justification,
     rejectionReason: request.rejectionReason ?? undefined,
     requestDate: request.requestDate,
-    expirationDate: request.expirationDate ?? undefined,
     macAddress: request.macAddress ?? undefined,
     requestedBy: {
       id: request.requestedBy?.id,

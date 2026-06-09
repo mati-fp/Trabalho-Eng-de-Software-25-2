@@ -1,11 +1,6 @@
 import { IP, IpAction, IpRequestStatus, IpRequestType, IpStatus } from "@/types";
 import { Badge } from "./badge";
 
-// Check if IP is expired
-export const isIpExpired = (expiresAt?: string): boolean => {
-  return expiresAt ? new Date(expiresAt) < new Date() : false;
-};
-
 export const getStatusBadge = (status: IpRequestStatus) => {
   switch (status) {
     case "pending":
@@ -49,12 +44,6 @@ export const getRequestTypeBadge = (requestType: IpRequestType) => {
           Nova
         </Badge>
       );
-    case "renewal":
-      return (
-        <Badge variant="secondary">
-          Renovação
-        </Badge>
-      );
     case "cancellation":
       return (
         <Badge variant="secondary">
@@ -71,14 +60,7 @@ export const getRequestTypeBadge = (requestType: IpRequestType) => {
 };
 
 // Get status badge variant
-export const getIpStatusBadge = (status: IpStatus, expiresAt?: string) => {
-  if (status === "expired" || isIpExpired(expiresAt)) {
-    return (
-      <Badge variant="destructive" className="bg-destructive/80 text-destructive-foreground">
-        Expirado
-      </Badge>
-    );
-  }
+export const getIpStatusBadge = (status: IpStatus) => {
   if (status === "available") {
     return (
       <Badge variant="default" className="bg-secondary text-primary-foreground">
@@ -108,22 +90,10 @@ export const getIpActionBadge = (action: IpAction) => {
           Liberado
         </Badge>
       );
-    case "renewed":
-      return (
-        <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800">
-          Renovado
-        </Badge>
-      );
     case "cancelled":
       return (
         <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800">
           Cancelado
-        </Badge>
-      );
-    case "expired":
-      return (
-        <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-300 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800">
-          Expirado
         </Badge>
       );
     case "requested":

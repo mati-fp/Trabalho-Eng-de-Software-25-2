@@ -56,9 +56,6 @@ describe('CompaniesService', () => {
     address: '10.0.0.100',
     macAddress: 'AA:BB:CC:DD:EE:FF',
     userName: 'Test User',
-    isTemporary: false,
-    expiresAt: undefined,
-    lastRenewedAt: undefined,
     status: IpStatus.IN_USE,
     company: mockCompany,
     room: mockRoom,
@@ -383,10 +380,7 @@ describe('CompaniesService', () => {
           company: null,
           macAddress: null,
           userName: null,
-          isTemporary: false,
           assignedAt: null,
-          expiresAt: null,
-          lastRenewedAt: null,
         },
       );
     });
@@ -484,52 +478,4 @@ describe('CompaniesService', () => {
     });
   });
 
-  describe('getRenewableIps', () => {
-    it('should return renewable IPs as DTOs for a company', async () => {
-      const mockQueryBuilder = {
-        leftJoinAndSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue([mockIp]),
-      };
-
-      ipRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
-
-      const result = await service.getRenewableIps(mockCompany.id);
-
-      // Verifica DTO
-      expect(result.length).toBe(1);
-      expect(result[0].id).toBe(mockIp.id);
-      expect(result[0].address).toBe(mockIp.address);
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('ip.companyId = :companyId', {
-        companyId: mockCompany.id,
-      });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('ip.isTemporary = :isTemporary', {
-        isTemporary: true,
-      });
-    });
-
-    it('should filter by expiration date (7 days)', async () => {
-      const mockQueryBuilder = {
-        leftJoinAndSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue([]),
-      };
-
-      ipRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
-
-      await service.getRenewableIps(mockCompany.id);
-
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        expect.stringContaining('ip.expiresAt'),
-        expect.objectContaining({
-          expired: IpStatus.EXPIRED,
-          sevenDays: expect.any(Date),
-        }),
-      );
-    });
-  });
 });

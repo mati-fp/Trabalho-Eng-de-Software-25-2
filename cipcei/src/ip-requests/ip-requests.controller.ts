@@ -26,11 +26,11 @@ export class IpRequestsController {
   constructor(private readonly ipRequestsService: IpRequestsService) {}
 
   /**
-   * UC3: Empresa solicita IP (NEW, RENEWAL, CANCELLATION)
+   * UC3: Empresa solicita IP (NEW, CANCELLATION)
    */
   @Post()
   @Roles([UserRole.COMPANY])
-  @ApiOperation({ summary: 'Solicitar IP (Company) - UC3, UC5, UC2' })
+  @ApiOperation({ summary: 'Solicitar IP (Company) - UC3, UC2' })
   @ApiResponse({ status: 201, description: 'Solicitação criada com sucesso', type: IpRequestResponseDto })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 401, description: 'Não autenticado' })

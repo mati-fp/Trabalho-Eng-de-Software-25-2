@@ -9,8 +9,6 @@ export interface IpRequestEmailData {
   justification: string;
   macAddress?: string;
   userName?: string;
-  isTemporary?: boolean;
-  expirationDate?: Date;
   requestDate: Date;
 }
 
@@ -21,7 +19,6 @@ export interface IpApprovedEmailData {
   macAddress?: string;
   userName?: string;
   requestType: string;
-  expirationDate?: Date;
   approvedAt: Date;
 }
 
@@ -48,7 +45,6 @@ export class EmailService {
   private formatRequestType(type: string): string {
     const types: Record<string, string> = {
       new: 'Novo IP',
-      renewal: 'Renovacao de IP',
       cancellation: 'Cancelamento de IP',
     };
     return types[type] || type;
@@ -84,8 +80,6 @@ export class EmailService {
           justification: data.justification,
           macAddress: data.macAddress || 'Nao informado',
           userName: data.userName || 'Nao informado',
-          isTemporary: data.isTemporary ? 'Sim' : 'Nao',
-          expirationDate: data.expirationDate ? this.formatDate(data.expirationDate) : 'Permanente',
           requestDate: this.formatDate(data.requestDate),
         },
       });
@@ -116,7 +110,6 @@ export class EmailService {
           macAddress: data.macAddress || 'Nao informado',
           userName: data.userName || 'Nao informado',
           requestType: this.formatRequestType(data.requestType),
-          expirationDate: data.expirationDate ? this.formatDate(data.expirationDate) : 'Permanente',
           approvedAt: this.formatDate(data.approvedAt),
         },
       });

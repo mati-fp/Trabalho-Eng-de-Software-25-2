@@ -120,7 +120,7 @@ describe('IpHistoryController', () => {
     it('should return history with multiple filters combined', async () => {
       const filters: FindIpHistoryDto = {
         companyId: 'company-uuid-456',
-        action: IpAction.RENEWED,
+        action: IpAction.ASSIGNED,
         startDate: '2024-01-01',
       };
       service.findAll.mockResolvedValue([mockHistory] as any);
@@ -170,7 +170,7 @@ describe('IpHistoryController', () => {
     it('should handle multiple history entries', async () => {
       const multipleHistories = [
         mockHistory,
-        { ...mockHistory, action: IpAction.RENEWED },
+        { ...mockHistory, action: IpAction.APPROVED },
         { ...mockHistory, action: IpAction.RELEASED },
       ];
       service.findByCompany.mockResolvedValue(multipleHistories as any);
@@ -213,7 +213,7 @@ describe('IpHistoryController', () => {
     it('should handle IP with multiple history entries', async () => {
       const ipHistories = [
         { ...mockHistory, action: IpAction.ASSIGNED },
-        { ...mockHistory, action: IpAction.RENEWED },
+        { ...mockHistory, action: IpAction.APPROVED },
         { ...mockHistory, action: IpAction.RELEASED },
       ];
       service.findByIp.mockResolvedValue(ipHistories as any);

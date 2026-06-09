@@ -118,14 +118,6 @@ export class IpHistoryResponseDto {
   notes?: string;
 
   @ApiProperty({
-    description: 'Data de expiracao (para IPs temporarios)',
-    example: '2025-06-15T10:30:00.000Z',
-    required: false,
-    nullable: true,
-  })
-  expirationDate?: Date;
-
-  @ApiProperty({
     description: 'IP associado ao historico',
     type: HistoryIpDto,
   })

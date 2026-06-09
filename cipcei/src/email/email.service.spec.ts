@@ -50,8 +50,6 @@ describe('EmailService', () => {
       justification: 'Precisamos de um IP para o novo servidor',
       macAddress: 'AA:BB:CC:DD:EE:FF',
       userName: 'Usuario Teste',
-      isTemporary: false,
-      expirationDate: undefined,
       requestDate: new Date('2025-11-26'),
     };
 
@@ -126,7 +124,6 @@ describe('EmailService', () => {
       macAddress: 'AA:BB:CC:DD:EE:FF',
       userName: 'Usuario Teste',
       requestType: 'new',
-      expirationDate: new Date('2026-11-26'),
       approvedAt: new Date('2025-11-26'),
     };
 

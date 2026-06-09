@@ -195,49 +195,17 @@ describe('IpRequestsService', () => {
       );
     });
 
-    it('should throw BadRequestException for RENEWAL without ipId', async () => {
-      const renewalDto = {
-        ...createDto,
-        requestType: IpRequestType.RENEWAL,
-      };
-      companyRepository.findOne.mockResolvedValue(mockCompany as any);
-
-      await expect(service.create(renewalDto, mockUser as any)).rejects.toThrow(
-        new BadRequestException('ID do IP é obrigatório para renovação ou cancelamento'),
-      );
-    });
-
-    it('should create RENEWAL request with valid IP and return DTO', async () => {
-      const renewalDto = {
-        ...createDto,
-        requestType: IpRequestType.RENEWAL,
-        ipId: mockIp.id,
-      };
-      const requestWithRelations = { ...mockRequest, company: { ...mockCompany, user: mockUser, room: mockRoom } };
-
-      companyRepository.findOne.mockResolvedValue(mockCompany as any);
-      ipRepository.findOne.mockResolvedValue({ ...mockIp, company: mockCompany } as any);
-      ipRequestRepository.create.mockReturnValue(mockRequest as any);
-      ipRequestRepository.save.mockResolvedValue(mockRequest as any);
-      ipRequestRepository.findOne.mockResolvedValue(requestWithRelations as any);
-
-      const result = await service.create(renewalDto, mockUser as any);
-
-      expect(result.id).toBe(mockRequest.id);
-      expect(ipHistoryService.create).toHaveBeenCalled();
-    });
-
     it('should throw UnauthorizedException when IP does not belong to company', async () => {
-      const renewalDto = {
+      const cancellationDto = {
         ...createDto,
-        requestType: IpRequestType.RENEWAL,
+        requestType: IpRequestType.CANCELLATION,
         ipId: mockIp.id,
       };
       const otherCompany = { id: 'other-company', room: mockRoom };
       companyRepository.findOne.mockResolvedValue(mockCompany as any);
       ipRepository.findOne.mockResolvedValue({ ...mockIp, company: otherCompany } as any);
 
-      await expect(service.create(renewalDto, mockUser as any)).rejects.toThrow(
+      await expect(service.create(cancellationDto, mockUser as any)).rejects.toThrow(
         new UnauthorizedException('Este IP não pertence à sua empresa'),
       );
     });
@@ -250,20 +218,20 @@ describe('IpRequestsService', () => {
       companyRepository.findOne.mockResolvedValue(mockCompany as any);
 
       await expect(service.create(cancellationDto, mockUser as any)).rejects.toThrow(
-        new BadRequestException('ID do IP é obrigatório para renovação ou cancelamento'),
+        new BadRequestException('ID do IP é obrigatório para cancelamento'),
       );
     });
 
-    it('should throw NotFoundException when IP not found for RENEWAL', async () => {
-      const renewalDto = {
+    it('should throw NotFoundException when IP not found for CANCELLATION', async () => {
+      const cancellationDto = {
         ...createDto,
-        requestType: IpRequestType.RENEWAL,
+        requestType: IpRequestType.CANCELLATION,
         ipId: 'non-existent-ip',
       };
       companyRepository.findOne.mockResolvedValue(mockCompany as any);
       ipRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.create(renewalDto, mockUser as any)).rejects.toThrow(
+      await expect(service.create(cancellationDto, mockUser as any)).rejects.toThrow(
         new NotFoundException('IP não encontrado'),
       );
     });
@@ -328,24 +296,6 @@ describe('IpRequestsService', () => {
       );
 
       expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
-    });
-
-    it('should approve RENEWAL request and renew IP', async () => {
-      const renewalRequest = {
-        ...mockRequest,
-        requestType: IpRequestType.RENEWAL,
-        ip: mockIp,
-        company: { ...mockCompany, room: mockRoom },
-        expirationDate: new Date(),
-      };
-      ipRequestRepository.findOne.mockResolvedValue(renewalRequest as any);
-      companyRepository.findOne.mockResolvedValue({ ...mockCompany, room: mockRoom } as any);
-      mockManagerSave.mockResolvedValue({} as any);
-
-      await service.approve(mockRequest.id, approveDto, mockAdmin as any);
-
-      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
-      expect(ipHistoryService.create).toHaveBeenCalled();
     });
 
     it('should approve CANCELLATION request and release IP', async () => {

@@ -29,7 +29,6 @@ export class IpHistoryService {
     macAddress?: string;
     userName?: string;
     notes?: string;
-    expirationDate?: Date;
   }): Promise<IpHistory> {
     const history = this.ipHistoryRepository.create(data);
     return this.ipHistoryRepository.save(history);

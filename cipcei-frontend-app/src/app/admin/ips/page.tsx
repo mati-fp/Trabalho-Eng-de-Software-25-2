@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import IpActionsButton from "./components/IpActionsButton";
-import { getIpStatusBadge, isIpExpired } from "@/components/ui/table-badge";
+import { getIpStatusBadge } from "@/components/ui/table-badge";
 import { formatDate } from "@/lib/utils";
 import Pagination from "@/components/ui/pagination";
 
@@ -94,11 +94,6 @@ export default function AdminIpsPage() {
       result = result.filter((ip) =>
         ip.address.toLowerCase().includes(searchQuery.toLowerCase())
       );
-    }
-
-    // Apply expired filter locally (in case backend doesn't handle it)
-    if (statusFilter === "expired") {
-      result = result.filter((ip) => isIpExpired(ip.expiresAt) || ip.status === "expired");
     }
 
     // Apply sorting
@@ -289,18 +284,14 @@ export default function AdminIpsPage() {
                   <TableHead className="text-center">Endereço MAC</TableHead>
                   <TableHead className="text-center">Sala</TableHead>
                   <TableHead className="text-center">Empresa</TableHead>
-                  <TableHead className="text-center">Data de Expiração</TableHead>
                   <TableHead className="text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {currentIps.map((ip) => (
-                  <TableRow
-                    key={ip.id}
-                    className={isIpExpired(ip.expiresAt) ? "bg-red-50 dark:bg-red-950/20" : ""}
-                  >
+                  <TableRow key={ip.id}>
                     <TableCell className="font-medium">{ip.address}</TableCell>
-                    <TableCell className="text-center">{getIpStatusBadge(ip.status, ip.expiresAt)}</TableCell>
+                    <TableCell className="text-center">{getIpStatusBadge(ip.status)}</TableCell>
                     <TableCell className="text-center">
                       {ip.macAddress || (
                         <span className="text-muted-foreground">-</span>
@@ -315,9 +306,6 @@ export default function AdminIpsPage() {
                       {ip.company?.user?.name || (
                         <span className="text-muted-foreground">-</span>
                       )}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {ip.expiresAt ? formatDate(ip.expiresAt) : <span className="text-muted-foreground">-</span>}
                     </TableCell>
                     <TableCell className="text-center">
                       <IpActionsButton

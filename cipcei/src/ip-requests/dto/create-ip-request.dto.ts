@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsBoolean, IsOptional, IsDateString, Matches } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IpRequestType } from '../entities/ip-request.entity';
 
@@ -26,17 +26,7 @@ export class CreateIpRequestDto {
   @IsString()
   userName?: string;
 
-  @ApiProperty({ description: 'Se o IP é temporário', default: false })
-  @IsOptional()
-  @IsBoolean()
-  isTemporary?: boolean;
-
-  @ApiProperty({ description: 'Data de expiração (para IPs temporários)', required: false })
-  @IsOptional()
-  @IsDateString()
-  expirationDate?: string;
-
-  @ApiProperty({ description: 'ID do IP (para renovação ou cancelamento)', required: false })
+  @ApiProperty({ description: 'ID do IP (para cancelamento)', required: false })
   @IsOptional()
   @IsString()
   ipId?: string;

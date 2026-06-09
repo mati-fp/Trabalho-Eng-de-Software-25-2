@@ -43,8 +43,6 @@ export class EmailController {
           justification: 'Precisamos de um IP para o novo servidor de desenvolvimento',
           macAddress: 'AA:BB:CC:DD:EE:FF',
           userName: 'Joao da Silva',
-          isTemporary: false,
-          expirationDate: undefined,
         });
         return {
           message: 'Email de confirmacao de solicitacao enviado!',
@@ -59,7 +57,6 @@ export class EmailController {
           macAddress: 'AA:BB:CC:DD:EE:FF',
           userName: 'Joao da Silva',
           requestType: 'new',
-          expirationDate: new Date('2026-12-31'),
         });
         return {
           message: 'Email de aprovacao de IP enviado!',

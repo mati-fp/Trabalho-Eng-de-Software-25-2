@@ -262,10 +262,7 @@ describe('IpsService', () => {
         status: IpStatus.IN_USE,
         macAddress: 'AA:BB:CC:DD:EE:FF',
         userName: 'John Doe',
-        isTemporary: true,
         assignedAt: new Date(),
-        expiresAt: new Date(),
-        lastRenewedAt: new Date(),
         company: mockCompany,
       };
       const unassignedIp = {
@@ -273,10 +270,7 @@ describe('IpsService', () => {
         status: IpStatus.AVAILABLE,
         macAddress: null,
         userName: null,
-        isTemporary: false,
         assignedAt: null,
-        expiresAt: null,
-        lastRenewedAt: null,
         company: null,
       };
 
@@ -294,10 +288,7 @@ describe('IpsService', () => {
           status: IpStatus.AVAILABLE,
           macAddress: null,
           userName: null,
-          isTemporary: false,
           assignedAt: null,
-          expiresAt: null,
-          lastRenewedAt: null,
           company: null,
         }),
       );

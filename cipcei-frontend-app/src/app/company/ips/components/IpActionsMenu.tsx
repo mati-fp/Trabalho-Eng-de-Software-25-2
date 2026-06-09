@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MoreVertical, RefreshCw, X } from "lucide-react";
+import { MoreVertical, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ConfirmDialog from "./ConfirmDialog";
 import Toast from "@/components/ui/toast";
 import { IP } from "@/types";
-import { IpRequestsAPI } from "@/infra/ip-requests";
 import { IpsAPI } from "@/infra/ips";
 
 interface IpActionsMenuProps {
@@ -18,7 +17,7 @@ export default function IpActionsMenu({ ip, onActionComplete }: IpActionsMenuPro
   const [isOpen, setIsOpen] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
-    action: "renew" | "cancel" | null;
+    action: "cancel" | null;
   }>({ open: false, action: null });
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLDivElement>(null);
@@ -73,46 +72,9 @@ export default function IpActionsMenu({ ip, onActionComplete }: IpActionsMenuPro
     };
   }, [isOpen]);
 
-  const handleRenew = () => {
-    setConfirmDialog({ open: true, action: "renew" });
-    setIsOpen(false);
-  };
-
   const handleCancel = () => {
     setConfirmDialog({ open: true, action: "cancel" });
     setIsOpen(false);
-  };
-
-  const handleConfirmRenew = async (expirationDate?: string) => {
-    if (!expirationDate) {
-      setToastMessage("Data de expiração é obrigatória.");
-      setToastVariant("error");
-      setToastOpen(true);
-      return;
-    }
-
-    try {
-      await IpRequestsAPI.createIpRequest({
-        requestType: "renewal",
-        ipId: ip.id,
-        expirationDate: expirationDate,
-        justification: "pedido de renovação",
-      });
-
-      setToastMessage("Solicitação de renovação criada com sucesso!");
-      setToastVariant("success");
-      setToastOpen(true);
-      setConfirmDialog({ open: false, action: null });
-      
-      if (onActionComplete) {
-        onActionComplete();
-      }
-    } catch (err) {
-      console.error("Error creating renewal request:", err);
-      setToastMessage("Erro ao criar solicitação de renovação. Tente novamente.");
-      setToastVariant("error");
-      setToastOpen(true);
-    }
   };
 
   const handleConfirmCancel = async () => {
@@ -159,13 +121,6 @@ export default function IpActionsMenu({ ip, onActionComplete }: IpActionsMenuPro
         >
           <div className="p-1">
             <button
-              onClick={handleRenew}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Renovar IP
-            </button>
-            <button
               onClick={handleCancel}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-sm hover:bg-accent transition-colors text-destructive"
             >
@@ -174,20 +129,6 @@ export default function IpActionsMenu({ ip, onActionComplete }: IpActionsMenuPro
             </button>
           </div>
         </div>
-      )}
-
-      {/* Diálogo de confirmação para Renovar */}
-      {confirmDialog.action === "renew" && (
-        <ConfirmDialog
-          open={confirmDialog.open}
-          onClose={() => setConfirmDialog({ open: false, action: null })}
-          onConfirm={handleConfirmRenew}
-          title="Renovar IP"
-          message="Selecione a nova data de expiração para o IP:"
-          confirmLabel="Renovar"
-          isRenew={true}
-          ip={ip}
-        />
       )}
 
       {/* Diálogo de confirmação para Cancelar */}

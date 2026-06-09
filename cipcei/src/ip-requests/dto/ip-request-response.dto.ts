@@ -123,14 +123,6 @@ export class IpRequestResponseDto {
   requestDate: Date;
 
   @ApiProperty({
-    description: 'Data de expiracao do IP (para IPs temporarios)',
-    example: '2025-06-15T10:30:00.000Z',
-    required: false,
-    nullable: true,
-  })
-  expirationDate?: Date;
-
-  @ApiProperty({
     description: 'Endereco MAC informado na solicitacao',
     example: '00:1B:44:11:3A:B7',
     required: false,
@@ -151,7 +143,7 @@ export class IpRequestResponseDto {
   company: IpRequestCompanyDto;
 
   @ApiProperty({
-    description: 'IP associado (para renovacao/cancelamento)',
+    description: 'IP associado (para cancelamento)',
     type: IpRequestIpDto,
     required: false,
     nullable: true,

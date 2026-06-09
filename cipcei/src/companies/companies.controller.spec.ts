@@ -32,7 +32,6 @@ describe('CompaniesController', () => {
     id: 'ip-uuid-001',
     address: '10.0.0.100',
     macAddress: 'AA:BB:CC:DD:EE:FF',
-    isTemporary: false,
     status: IpStatus.IN_USE,
     assignedAt: new Date(),
   };
@@ -70,7 +69,6 @@ describe('CompaniesController', () => {
             remove: jest.fn(),
             getAllMyIps: jest.fn(),
             getActiveIps: jest.fn(),
-            getRenewableIps: jest.fn(),
           },
         },
       ],
@@ -127,31 +125,9 @@ describe('CompaniesController', () => {
     });
   });
 
-  describe('getMyRenewableIps', () => {
-    it('should return renewable IPs for the logged-in company', async () => {
-      const renewableIp = { ...mockIp, isTemporary: true, status: IpStatus.EXPIRED };
-      companiesService.getRenewableIps.mockResolvedValue([renewableIp] as any);
-
-      const result = await controller.getMyRenewableIps(mockRequest);
-
-      expect(result).toEqual([renewableIp]);
-      expect(companiesService.getRenewableIps).toHaveBeenCalledWith(
-        mockRequest.user.company.id,
-      );
-    });
-
-    it('should use company ID from JWT token', async () => {
-      companiesService.getRenewableIps.mockResolvedValue([]);
-
-      await controller.getMyRenewableIps(mockRequest);
-
-      expect(companiesService.getRenewableIps).toHaveBeenCalledWith('company-uuid-123');
-    });
-  });
-
   describe('getMyIps', () => {
     it('should return all IPs for the logged-in company', async () => {
-      const allIps = [mockIp, { ...mockIp, id: 'ip-uuid-002', status: IpStatus.EXPIRED }];
+      const allIps = [mockIp, { ...mockIp, id: 'ip-uuid-002', status: IpStatus.IN_USE }];
       companiesService.getAllMyIps.mockResolvedValue(allIps as any);
 
       const result = await controller.getMyIps(mockRequest);
@@ -160,10 +136,10 @@ describe('CompaniesController', () => {
       expect(companiesService.getAllMyIps).toHaveBeenCalledWith(mockRequest.user.company.id);
     });
 
-    it('should include both active and expired IPs', async () => {
+    it('should include IPs regardless of status', async () => {
       const mixedIps = [
         { ...mockIp, status: IpStatus.IN_USE },
-        { ...mockIp, id: 'ip-2', status: IpStatus.EXPIRED },
+        { ...mockIp, id: 'ip-2', status: IpStatus.AVAILABLE },
       ];
       companiesService.getAllMyIps.mockResolvedValue(mixedIps as any);
 

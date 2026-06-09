@@ -12,7 +12,6 @@ import {
 export enum IpStatus {
   AVAILABLE = 'available',
   IN_USE = 'in_use',
-  EXPIRED = 'expired',
 }
 
 @Entity()
@@ -36,17 +35,8 @@ export class Ip {
   @Column({ nullable: true })
   userName: string;
 
-  @Column({ default: false })
-  isTemporary: boolean;
-
   @Column({ nullable: true })
   assignedAt: Date;
-
-  @Column({ nullable: true })
-  expiresAt: Date;
-
-  @Column({ nullable: true })
-  lastRenewedAt: Date;
 
   @ManyToOne(() => Room, (room) => room.ips)
   room: Room;

@@ -12,9 +12,7 @@ import { User } from '../../users/entities/user.entity';
 export enum IpAction {
   ASSIGNED = 'assigned',
   RELEASED = 'released',
-  RENEWED = 'renewed',
   CANCELLED = 'cancelled',
-  EXPIRED = 'expired',
   REQUESTED = 'requested',
   APPROVED = 'approved',
   REJECTED = 'rejected',
@@ -51,7 +49,4 @@ export class IpHistory {
 
   @Column({ type: 'text', nullable: true })
   notes: string;
-
-  @Column({ nullable: true })
-  expirationDate: Date;
 }

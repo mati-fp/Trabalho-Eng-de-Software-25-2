@@ -215,7 +215,6 @@ export default function AdminRequestsPage() {
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="new">Nova</SelectItem>
-                <SelectItem value="renewal">Renovação</SelectItem>
                 <SelectItem value="cancellation">Cancelamento</SelectItem>
               </SelectContent>
             </Select>
@@ -301,9 +300,6 @@ export default function AdminRequestsPage() {
                       </span>
                     )}
                   </TableHead>
-                  <TableHead className="text-center">
-                    Data de Expiração
-                  </TableHead>
                   <TableHead>
                     Justificativa
                   </TableHead>
@@ -334,13 +330,6 @@ export default function AdminRequestsPage() {
                     </TableCell>
                     <TableCell className="text-center">
                       {formatDate(request.requestDate, true)}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {request.expirationDate ? (
-                        formatDate(request.expirationDate)
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
                     </TableCell>
                     <TableCell>
                       <div className="max-w-xs truncate" title={request.justification}>

@@ -86,18 +86,18 @@ describe('IpRequestsController', () => {
       expect(service.create).toHaveBeenCalledWith(createDto, mockUser);
     });
 
-    it('should call service with correct parameters for RENEWAL', async () => {
-      const renewalDto = {
+    it('should call service with correct parameters for CANCELLATION', async () => {
+      const cancellationDto = {
         ...createDto,
-        requestType: IpRequestType.RENEWAL,
+        requestType: IpRequestType.CANCELLATION,
         ipId: 'ip-uuid-001',
       };
       const req = { user: mockUser };
       service.create.mockResolvedValue(mockRequest as any);
 
-      await controller.create(renewalDto, req);
+      await controller.create(cancellationDto, req);
 
-      expect(service.create).toHaveBeenCalledWith(renewalDto, mockUser);
+      expect(service.create).toHaveBeenCalledWith(cancellationDto, mockUser);
     });
 
     it('should call service with correct parameters for CANCELLATION', async () => {

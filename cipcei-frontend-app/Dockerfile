@@ -1,42 +1,21 @@
-FROM node:20-alpine AS base
+FROM node:22-alpine
 
-# Instalar pnpm
-RUN npm install -g pnpm
-
-# Stage de dependências
-FROM base AS deps
+# Diretorio de trabalho
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
+
+# Habilita o pnpm via corepack (atualiza o corepack para suportar o pnpm fixado no package.json)
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN npm install -g corepack@latest && corepack enable
+
+# Instala dependencias primeiro (camada cacheavel)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
-# Stage de build
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Copia o restante do codigo
 COPY . .
-RUN pnpm run build
 
-# Stage de produção (standalone)
-FROM base AS runner
-WORKDIR /app
-
-ENV NODE_ENV=production
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Copiar arquivos standalone do build
-# O standalone já contém tudo necessário, incluindo node_modules e server.js
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
-
+# Porta da aplicacao
 EXPOSE 3001
 
-ENV PORT=3001
-ENV HOSTNAME="0.0.0.0"
-
-CMD ["node", "server.js"]
-
+# Inicia o Next.js em modo desenvolvimento com hot-reload
+CMD ["pnpm", "dev"]

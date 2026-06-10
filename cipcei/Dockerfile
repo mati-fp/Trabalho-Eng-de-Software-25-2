@@ -1,22 +1,24 @@
-FROM node:20-alpine
+FROM node:22-alpine
 
-# Definir diretório de trabalho
+# Diretorio de trabalho
 WORKDIR /app
 
-# Instalar dependências do sistema necessárias
+# Dependencias de sistema para compilar modulos nativos (ex.: bcrypt)
 RUN apk add --no-cache python3 make g++
 
-# Copiar arquivos de dependências
-COPY package*.json ./
+# Habilita o pnpm via corepack (atualiza o corepack para suportar o pnpm fixado no package.json)
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN npm install -g corepack@latest && corepack enable
 
-# Instalar dependências
-RUN npm ci
+# Instala dependencias primeiro (camada cacheavel)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
 
-# Copiar código fonte
+# Copia o restante do codigo
 COPY . .
 
-# Expor porta da aplicação
+# Porta da aplicacao
 EXPOSE 3000
 
-# Comando para iniciar em modo desenvolvimento com hot-reload
-CMD ["npm", "run", "start:dev"]
+# Inicia em modo desenvolvimento com hot-reload
+CMD ["pnpm", "run", "start:dev"]

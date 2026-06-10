@@ -1,0 +1,27 @@
+services:
+  # Serviço da aplicação Next.js (frontend)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: frontend-cipcei
+    restart: always
+    ports:
+      - "3001:3001"
+    volumes:
+      # Volume bind para hot-reload - mapeia código local para o container
+      - .:/app
+      - /app/node_modules # Evita sobrescrever node_modules do container
+      - /app/.next # Evita sobrescrever .next do container
+    environment:
+      # URL da API backend (acessível do navegador do usuário).
+      # O front sobe separado do back; aponte para onde o backend está exposto no host.
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NODE_ENV: development
+      PORT: 3001
+      # Necessário para o hot reload funcionar dentro do Docker
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+    command: pnpm dev
+    stdin_open: true
+    tty: true

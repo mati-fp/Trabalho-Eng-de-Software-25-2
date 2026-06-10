@@ -456,7 +456,7 @@ describe('IpRequestsService', () => {
       const requestWithRelations = { ...mockRequest, company: { ...mockCompany, user: mockUser, room: mockRoom } };
       ipRequestRepository.findOne.mockResolvedValue(requestWithRelations as any);
 
-      const result = await service.findOne(mockRequest.id);
+      const result = await service.findOne(mockRequest.id, mockUser as any);
 
       // Verifica DTO
       expect(result.id).toBe(mockRequest.id);
@@ -466,9 +466,33 @@ describe('IpRequestsService', () => {
     it('should throw NotFoundException when request not found', async () => {
       ipRequestRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.findOne('invalid-id')).rejects.toThrow(
+      await expect(service.findOne('invalid-id', mockAdmin as any)).rejects.toThrow(
         new NotFoundException('Solicitação não encontrada'),
       );
+    });
+
+    it('should throw NotFoundException when a company tries to access another company request', async () => {
+      const otherCompanyRequest = {
+        ...mockRequest,
+        company: { ...mockCompany, id: 'company-uuid-other', user: mockUser, room: mockRoom },
+      };
+      ipRequestRepository.findOne.mockResolvedValue(otherCompanyRequest as any);
+
+      await expect(service.findOne(mockRequest.id, mockUser as any)).rejects.toThrow(
+        new NotFoundException('Solicitação não encontrada'),
+      );
+    });
+
+    it('should allow an admin to access any company request', async () => {
+      const otherCompanyRequest = {
+        ...mockRequest,
+        company: { ...mockCompany, id: 'company-uuid-other', user: mockUser, room: mockRoom },
+      };
+      ipRequestRepository.findOne.mockResolvedValue(otherCompanyRequest as any);
+
+      const result = await service.findOne(mockRequest.id, mockAdmin as any);
+
+      expect(result.id).toBe(mockRequest.id);
     });
   });
 });

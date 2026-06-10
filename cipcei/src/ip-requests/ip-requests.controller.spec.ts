@@ -210,25 +210,25 @@ describe('IpRequestsController', () => {
     it('should return specific request by ID', async () => {
       service.findOne.mockResolvedValue(mockRequest as any);
 
-      const result = await controller.findOne('request-uuid-999');
+      const result = await controller.findOne('request-uuid-999', { user: mockUser });
 
       expect(result).toEqual(mockRequest);
-      expect(service.findOne).toHaveBeenCalledWith('request-uuid-999');
+      expect(service.findOne).toHaveBeenCalledWith('request-uuid-999', mockUser);
     });
 
     it('should call service with correct ID', async () => {
       service.findOne.mockResolvedValue(mockRequest as any);
 
-      await controller.findOne('test-request-id');
+      await controller.findOne('test-request-id', { user: mockUser });
 
-      expect(service.findOne).toHaveBeenCalledWith('test-request-id');
+      expect(service.findOne).toHaveBeenCalledWith('test-request-id', mockUser);
     });
 
     it('should propagate NotFoundException from service', async () => {
       const error = new Error('Request not found');
       service.findOne.mockRejectedValue(error);
 
-      await expect(controller.findOne('invalid-id')).rejects.toThrow('Request not found');
+      await expect(controller.findOne('invalid-id', { user: mockUser })).rejects.toThrow('Request not found');
     });
   });
 

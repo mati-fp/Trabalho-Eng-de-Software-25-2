@@ -99,8 +99,8 @@ export class IpRequestsController {
   @ApiResponse({ status: 200, description: 'Solicitação encontrada', type: IpRequestResponseDto })
   @ApiResponse({ status: 401, description: 'Não autenticado' })
   @ApiResponse({ status: 404, description: 'Solicitação não encontrada' })
-  async findOne(@Param('id') id: string): Promise<IpRequestResponseDto> {
-    return this.ipRequestsService.findOne(id);
+  async findOne(@Param('id') id: string, @Request() req): Promise<IpRequestResponseDto> {
+    return this.ipRequestsService.findOne(id, req.user);
   }
 
   /**

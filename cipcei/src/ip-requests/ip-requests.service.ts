@@ -9,7 +9,7 @@ import { Repository, DataSource } from 'typeorm';
 import { IpRequest, IpRequestStatus, IpRequestType } from './entities/ip-request.entity';
 import { Ip, IpStatus } from '../ips/entities/ip.entity';
 import { Company } from '../companies/entities/company.entity';
-import { User } from '../users/entities/user.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 import { IpHistoryService } from '../ip-history/ip-history.service';
 import { IpAction } from '../ip-history/entities/ip-history.entity';
 import { EmailService } from '../email/email.service';
@@ -429,13 +429,22 @@ export class IpRequestsService {
   /**
    * Buscar uma solicitação específica
    */
-  async findOne(id: string): Promise<IpRequestResponseDto> {
+  async findOne(id: string, user: User): Promise<IpRequestResponseDto> {
     const request = await this.ipRequestRepository.findOne({
       where: { id },
       relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
     });
 
     if (!request) {
+      throw new NotFoundException('Solicitação não encontrada');
+    }
+
+    // Empresa só pode acessar as próprias solicitações (admin acessa todas).
+    // Retorna "não encontrada" para não revelar a existência de solicitações de outras empresas.
+    if (
+      user.role !== UserRole.ADMIN &&
+      request.company?.id !== user.company?.id
+    ) {
       throw new NotFoundException('Solicitação não encontrada');
     }
 

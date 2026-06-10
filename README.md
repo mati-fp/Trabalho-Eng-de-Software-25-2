@@ -1,212 +1,143 @@
 # Trabalho-Eng-de-Software-25-2
-## Sistema de gerenciamento de IP's para o CEI (Centro de Empreendedorismo e Inovação do INF-UFRGS)
 
-# Project setup
+## Sistema de gerenciamento de IPs para o CEI (Centro de Empreendedorismo e Inovação do INF-UFRGS)
 
-## Versão do node é a 20 LTS-Mais-Recente (Iron) Com NPM
+Aplicação web para controlar a alocação de endereços IP das empresas incubadas no CEI: cadastro de IPs por sala, fluxo de solicitação e aprovação, histórico de auditoria e notificações por e-mail.
 
-# 🐳 Configuração Docker para Desenvolvimento
+## Stack
+
+- Backend: NestJS 11 + TypeORM + PostgreSQL
+- Frontend: Next.js 15 + React 19
+- Gerenciador de pacotes: pnpm 11 (fixado pelo campo `packageManager` e instalado via corepack)
+- Runtime: Node 22 LTS
+- Containers: Docker + Docker Compose
+
+## Estrutura do repositório
+
+- `cipcei/` — backend (NestJS) e o banco de dados (PostgreSQL)
+- `cipcei-frontend-app/` — frontend (Next.js)
+- `Documentos-e-Diagramas/` e `misc/` — documentação, diagramas e requisitos
+
+Cada aplicação tem o seu próprio `Dockerfile` e `docker-compose.yaml`, controlados de forma independente.
 
 ## Pré-requisitos
-- Docker instalado (versão 20.10+)
-- Docker Compose instalado (versão 2.0+)
 
-## Como usar
+- Docker 20.10+
+- Docker Compose v2 (comando `docker compose`)
 
-### 1. Primeira vez rodando o projeto
+Para rodar fora do Docker (opcional): Node 22 LTS e pnpm 11 (basta `corepack enable`).
+
+## Como rodar com Docker
+
+O backend e o frontend sobem separadamente, cada um a partir do seu diretório.
+
+### 1. Backend + banco de dados (`cipcei/`)
 
 ```bash
-# Clone o repositório
-git clone [seu-repositorio]
-cd [seu-projeto]/[cipcei]
+cd cipcei
 
-# Copie o arquivo de exemplo de variáveis de ambiente 
-cp .env.example .env # PARA USARMOS NO FUTURO
+# Na primeira vez, crie o arquivo de variáveis de ambiente
+cp .env.example .env
 
-# Construa e inicie os containers
-docker-compose up --build
+# Sobe o PostgreSQL e o backend
+docker compose up --build
 ```
 
-### 2. Comandos úteis
+Sobe dois serviços:
+
+- `postgres-cipcei` — PostgreSQL na porta 5432
+- `backend-cipcei` — API NestJS na porta 3000 (porta de debug 9229)
+
+### 2. Frontend (`cipcei-frontend-app/`)
+
+Em outro terminal:
 
 ```bash
-# Iniciar os containers
-docker-compose up
+cd cipcei-frontend-app
 
-# Iniciar em background
-docker-compose up -d
+# Sobe o frontend
+docker compose up --build
+```
+
+Sobe o serviço `frontend-cipcei` na porta 3001.
+
+O frontend conversa com a API pelo navegador em `http://localhost:3000` (variável `NEXT_PUBLIC_API_URL`), então o backend precisa estar no ar para a aplicação funcionar.
+
+## Acessando a aplicação
+
+- Frontend: http://localhost:3001
+- API (backend): http://localhost:3000
+- Documentação da API (Swagger): http://localhost:3000/api
+- PostgreSQL: localhost:5432
+- Debug do backend (VSCode): porta 9229
+
+## Hot reload
+
+Os dois containers rodam em modo de desenvolvimento com hot-reload. O código é montado por volume, então alterações nos arquivos recarregam a aplicação automaticamente dentro do container.
+
+## Comandos úteis
+
+```bash
+# Subir em background
+docker compose up -d
+
+# Ver logs do backend (dentro de cipcei/)
+docker compose logs -f app
+
+# Ver logs do frontend (dentro de cipcei-frontend-app/)
+docker compose logs -f frontend
 
 # Parar os containers
-docker-compose down
+docker compose down
 
-# Reconstruir após mudanças no Dockerfile
-docker-compose up --build
+# Reconstruir após mudar o Dockerfile ou as dependências
+docker compose up --build
 
-# Ver logs
-docker-compose logs -f app
+# Limpar inclusive os volumes (apaga os dados do banco)
+docker compose down -v
 
-# Acessar o container da aplicação
-docker-compose exec app sh
+# Instalar uma nova dependência no backend
+docker compose exec app pnpm add <pacote>
 
-# Instalar nova dependência
-docker-compose exec app npm install [pacote]
+# Instalar uma nova dependência no frontend
+docker compose exec frontend pnpm add <pacote>
 
-# Rodar migrations (ajuste conforme seu setup)
-docker-compose exec app npm run migration:run
-
-# Limpar volumes e recomeçar do zero
-docker-compose down -v
+# Abrir um shell dentro de um container
+docker compose exec app sh
 ```
 
-### 3. Estrutura
+## Rodando localmente sem Docker (opcional)
 
-- **PostgreSQL**: Roda na porta `5432`
-- **NestJS**: Roda na porta `3000`
-- **Debug**: Disponível na porta `9229` (para VSCode)
-
-### 4. Hot Reload
-
-O hot-reload está configurado automaticamente! Quando você salvar qualquer arquivo `.ts` ou `.js`, o NestJS irá recarregar automaticamente dentro do container.
-
-### 5. Acessando a aplicação
-
-- API: http://localhost:3000
-- PostgreSQL: localhost:5432
-
-
-### 6. Troubleshooting
-
-**Problema**: Container não inicia
-```bash
-# Verifique os logs
-docker-compose logs app
-```
-
-**Problema**: Mudanças não refletem
-```bash
-# Reconstrua o container
-docker-compose down
-docker-compose up --build
-```
-
-**Problema**: Erro de permissão
-```bash
-# No Linux, pode ser necessário ajustar permissões
-sudo chown -R $USER:$USER .
-```
-
-**Problema**: Porta já em uso
-```bash
-# Verifique se as portas 3000 ou 5432 já estão em uso
-lsof -i :3000
-lsof -i :5432
-```
-
-### 7. Para toda a equipe
-
-Cada desenvolvedor precisa apenas:
-1. Ter Docker instalado
-2. Clonar o repositório
-3. Rodar `docker-compose up --build`
-
-Isso garante que todos tenham exatamente o mesmo ambiente! 🎉
-
-
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
-
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+Requer Node 22 LTS e pnpm 11 (`corepack enable`).
 
 ```bash
-$ npm install
+# Backend (precisa de um PostgreSQL acessível e do arquivo .env)
+cd cipcei
+pnpm install
+pnpm run start:dev
+
+# Frontend
+cd cipcei-frontend-app
+pnpm install
+pnpm dev
 ```
 
-## Compile and run the project
+## Testes do backend
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+cd cipcei
+pnpm test          # testes unitários
+pnpm run test:e2e  # testes end-to-end
+pnpm run test:cov  # cobertura
 ```
 
-## Run tests
+## Banco de dados
 
-```bash
-# unit tests
-$ npm run test
+O schema é gerenciado pelo TypeORM. Em desenvolvimento, com `TYPEORM_SYNCHRONIZE=true` no `.env`, as tabelas são criadas e atualizadas automaticamente a partir das entidades. Não utilize `synchronize` em produção.
 
-# e2e tests
-$ npm run test:e2e
+## Troubleshooting
 
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- Container não inicia: veja os logs com `docker compose logs <serviço>`.
+- Alterações não refletem: reconstrua com `docker compose down` seguido de `docker compose up --build`.
+- Porta em uso: verifique se 3000, 3001 ou 5432 já estão ocupadas (por exemplo `lsof -i :3000`).
+- Erro de permissão em arquivos gerados pelo container (Linux): `sudo chown -R $USER:$USER .`.

@@ -1,0 +1,13 @@
+# Configuracoes do pnpm (a partir do pnpm 11 ficam aqui, nao mais no package.json)
+
+# Quais dependencias podem rodar scripts de build (modulos nativos).
+# sharp: usado pelo Next.js para otimizacao de imagens.
+allowBuilds:
+  sharp: true
+  unrs-resolver: true
+
+# Desativa a politica de "idade minima de release" do pnpm 11, que bloqueia
+# pacotes publicados ha pouco tempo. Mantemos 0 para nao travar atualizacoes
+# para versoes recentes (mesmo comportamento que tinhamos com o npm).
+# Para endurecer a seguranca de supply-chain, aumente este valor (em minutos).
+minimumReleaseAge: 0

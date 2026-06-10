@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import ConfirmDialog from "./ConfirmDialog";
 import Toast from "@/components/ui/toast";
 import { IP } from "@/types";
-import { IpsAPI } from "@/infra/ips";
+import { IpRequestsAPI } from "@/infra/ip-requests";
 
 interface IpActionsMenuProps {
   ip: IP;
@@ -79,19 +79,25 @@ export default function IpActionsMenu({ ip, onActionComplete }: IpActionsMenuPro
 
   const handleConfirmCancel = async () => {
     try {
-      await IpsAPI.unassignIp(ip.id);
+      await IpRequestsAPI.createIpRequest({
+        requestType: "cancellation",
+        ipId: ip.id,
+        justification: "Pedido de cancelamento do IP",
+      });
 
-      setToastMessage("IP cancelado com sucesso!");
+      setToastMessage(
+        "Solicitação de cancelamento enviada! Aguarde a aprovação do administrador."
+      );
       setToastVariant("success");
       setToastOpen(true);
       setConfirmDialog({ open: false, action: null });
-      
+
       if (onActionComplete) {
         onActionComplete();
       }
     } catch (err) {
-      console.error("Error canceling IP:", err);
-      setToastMessage("Erro ao cancelar IP. Tente novamente.");
+      console.error("Error creating cancellation request:", err);
+      setToastMessage("Erro ao solicitar cancelamento. Tente novamente.");
       setToastVariant("error");
       setToastOpen(true);
     }
@@ -137,9 +143,9 @@ export default function IpActionsMenu({ ip, onActionComplete }: IpActionsMenuPro
           open={confirmDialog.open}
           onClose={() => setConfirmDialog({ open: false, action: null })}
           onConfirm={handleConfirmCancel}
-          title="Cancelar IP"
-          message={`Tem certeza que deseja cancelar o IP ${ip.address}? Esta ação não pode ser desfeita.`}
-          confirmLabel="Sim"
+          title="Solicitar cancelamento do IP"
+          message={`Deseja solicitar o cancelamento do IP ${ip.address}? O administrador precisará aprovar a solicitação para que o IP seja liberado.`}
+          confirmLabel="Sim, solicitar"
           cancelLabel="Não"
           variant="destructive"
         />

@@ -1,5 +1,5 @@
-import { IsMACAddress, IsNotEmpty, IsUUID } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsMACAddress, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class AssignIpDto {
   @ApiProperty({
@@ -17,4 +17,12 @@ export class AssignIpDto {
   @IsUUID()
   @IsNotEmpty()
   companyId: string;
+
+  @ApiPropertyOptional({
+    description: 'Nome do responsável que utilizará o IP',
+    example: 'João da Silva',
+  })
+  @IsString()
+  @IsOptional()
+  userName?: string;
 }

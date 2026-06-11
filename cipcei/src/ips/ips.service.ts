@@ -74,6 +74,8 @@ export class IpsService {
       throw new NotFoundException(`Sala com ID "${roomId}" nao encontrada`);
     }
 
+    await this.assertAddressesAreUnique(createIpDtos.map((dto) => dto.address));
+
     const ipsToSave = createIpDtos.map((dto) =>
       this.ipRepository.create({
         address: dto.address,
@@ -90,8 +92,31 @@ export class IpsService {
     return toIpResponseDtoList(ipsWithRelations);
   }
 
+  /**
+   * Garante que os enderecos nao se repetem na requisicao nem ja existem no banco,
+   * retornando um erro amigavel em vez de deixar estourar a constraint unique.
+   */
+  private async assertAddressesAreUnique(addresses: string[]): Promise<void> {
+    const duplicatedInPayload = addresses.filter(
+      (address, index) => addresses.indexOf(address) !== index,
+    );
+    if (duplicatedInPayload.length > 0) {
+      const repeated = [...new Set(duplicatedInPayload)].join(', ');
+      throw new ConflictException(`Enderecos IP repetidos na requisicao: ${repeated}`);
+    }
+
+    const existing = await this.ipRepository.find({
+      where: addresses.map((address) => ({ address })),
+      select: ['address'],
+    });
+    if (existing.length > 0) {
+      const taken = existing.map((ip) => ip.address).join(', ');
+      throw new ConflictException(`Enderecos IP ja cadastrados: ${taken}`);
+    }
+  }
+
   async assign(ipId: string, assignIpDto: AssignIpDto, admin: User): Promise<IpResponseDto> {
-    const { macAddress, companyId } = assignIpDto;
+    const { macAddress, companyId, userName } = assignIpDto;
 
     // 1. Encontra o IP e sua sala
     const ip = await this.ipRepository.findOne({
@@ -124,6 +149,9 @@ export class IpsService {
     // 5. Atualiza e salva o IP
     ip.status = IpStatus.IN_USE;
     ip.macAddress = macAddress;
+    if (userName) {
+      ip.userName = userName;
+    }
     ip.company = company;
     ip.assignedAt = new Date();
 
@@ -136,6 +164,7 @@ export class IpsService {
       action: IpAction.ASSIGNED,
       performedBy: admin,
       macAddress,
+      userName,
       notes: 'Atribuicao direta pelo admin',
     });
 

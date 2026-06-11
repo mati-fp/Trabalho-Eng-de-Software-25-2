@@ -166,7 +166,9 @@ describe('IpsService', () => {
       roomRepository.findOneBy.mockResolvedValue(mockRoom as any);
       ipRepository.create.mockImplementation((data: any) => ({ ...mockIp, ...data }));
       ipRepository.save.mockResolvedValue([mockIp, mockIp] as any);
-      ipRepository.find.mockResolvedValue([mockIp, mockIp] as any);
+      ipRepository.find
+        .mockResolvedValueOnce([] as any) // verificacao de duplicidade: nenhum ja existe
+        .mockResolvedValueOnce([mockIp, mockIp] as any); // busca com relacoes para o DTO
 
       const result = await service.bulkCreate(mockRoom.id, createIpDtos);
 
@@ -185,6 +187,17 @@ describe('IpsService', () => {
       await expect(service.bulkCreate('invalid-id', createIpDtos)).rejects.toThrow(
         new NotFoundException('Sala com ID "invalid-id" nao encontrada'),
       );
+    });
+
+    it('should throw ConflictException when the payload has duplicate addresses', async () => {
+      roomRepository.findOneBy.mockResolvedValue(mockRoom as any);
+
+      await expect(
+        service.bulkCreate(mockRoom.id, [
+          { address: '10.0.0.100' },
+          { address: '10.0.0.100' },
+        ]),
+      ).rejects.toThrow(ConflictException);
     });
   });
 

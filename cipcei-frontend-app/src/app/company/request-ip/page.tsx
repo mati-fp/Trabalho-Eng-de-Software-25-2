@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks";
 import {
   Card,
   CardContent,
@@ -12,23 +11,29 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import Toast from "@/components/ui/toast";
 import { CreateIpRequestPayload, IpRequestsAPI } from "@/infra/ip-requests";
 
 interface FormErrors {
   macAddress?: string;
-  roomLocation?: string;
+  userName?: string;
   justification?: string;
 }
 
 export default function RequestIpPage() {
   const router = useRouter();
-  const { profile } = useAuth();
 
   const [macAddress, setMacAddress] = useState("");
-  const [roomLocation, setRoomLocation] = useState("");
+  const [userName, setUserName] = useState("");
   const [justification, setJustification] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
+
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastVariant, setToastVariant] = useState<
+    "success" | "error" | "info" | "warning"
+  >("info");
 
   // Validação de formato MAC Address
   const validateMacAddress = (mac: string): boolean => {
@@ -47,9 +52,9 @@ export default function RequestIpPage() {
       newErrors.macAddress = "Formato inválido. Use: XX:XX:XX:XX:XX:XX";
     }
 
-    // Validar Sala/Local
-    if (!roomLocation.trim()) {
-      newErrors.roomLocation = "Sala é obrigatório";
+    // Validar nome do responsável
+    if (!userName.trim()) {
+      newErrors.userName = "Nome do responsável é obrigatório";
     }
 
     // Validar Justificativa
@@ -59,6 +64,13 @@ export default function RequestIpPage() {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const resetForm = () => {
+    setMacAddress("");
+    setUserName("");
+    setJustification("");
+    setErrors({});
   };
 
   // Função de submit
@@ -71,25 +83,34 @@ export default function RequestIpPage() {
 
     setLoading(true);
 
-    // Criar payload
     const payload: CreateIpRequestPayload = {
       requestType: "new",
       justification: justification.trim(),
       macAddress: macAddress.trim(),
-      userName: profile?.name,
+      userName: userName.trim(),
     };
 
-    // Apenas printar o payload conforme solicitado
-    console.log("Form Payload:", payload);
-
     try {
-      const response = await IpRequestsAPI.createIpRequest(payload);
-      console.log("Response:", response);
+      await IpRequestsAPI.createIpRequest(payload);
+
+      setToastMessage(
+        "Solicitação enviada! Acompanhe o status em Minhas solicitações."
+      );
+      setToastVariant("success");
+      setToastOpen(true);
+      resetForm();
+
+      // Redireciona para a lista de solicitações após um breve intervalo
+      setTimeout(() => {
+        router.push("/company/requests");
+      }, 1500);
     } catch (error) {
       console.error("Error submitting form:", error);
+      setToastMessage("Erro ao enviar a solicitação. Tente novamente.");
+      setToastVariant("error");
+      setToastOpen(true);
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   // Função de cancelar
@@ -139,27 +160,27 @@ export default function RequestIpPage() {
                 </div>
                 <div className="space-y-2">
                   <label
-                    htmlFor="roomLocation"
+                    htmlFor="userName"
                     className="text-sm font-medium text-foreground"
                   >
-                    Sala <span className="text-destructive">*</span>
+                    Nome do responsável <span className="text-destructive">*</span>
                   </label>
                   <Input
-                    id="roomLocation"
+                    id="userName"
                     type="text"
-                    placeholder="Ex: 201"
-                    value={roomLocation}
+                    placeholder="Pessoa que utilizará o IP"
+                    value={userName}
                     onChange={(e) => {
-                      setRoomLocation(e.target.value);
-                      if (errors.roomLocation) {
-                        setErrors({ ...errors, roomLocation: undefined });
+                      setUserName(e.target.value);
+                      if (errors.userName) {
+                        setErrors({ ...errors, userName: undefined });
                       }
                     }}
-                    className={errors.roomLocation ? "border-destructive" : ""}
-                    aria-invalid={!!errors.roomLocation}
+                    className={errors.userName ? "border-destructive" : ""}
+                    aria-invalid={!!errors.userName}
                   />
-                  {errors.roomLocation && (
-                    <p className="text-sm text-destructive">{errors.roomLocation}</p>
+                  {errors.userName && (
+                    <p className="text-sm text-destructive">{errors.userName}</p>
                   )}
                 </div>
               </div>
@@ -178,12 +199,11 @@ export default function RequestIpPage() {
                   rows={4}
                   className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                 />
+                {errors.justification && (
+                  <p className="text-sm text-destructive">{errors.justification}</p>
+                )}
               </div>
-              {errors.justification && (
-                <p className="text-sm text-destructive">{errors.justification}</p>
-              )}
             </div>
-
 
             {/* Botões de Ação */}
             <div className="flex justify-end gap-4 pt-4">
@@ -195,18 +215,20 @@ export default function RequestIpPage() {
               >
                 Cancelar
               </Button>
-              <Button
-                type="submit"
-                variant="default"
-                disabled={loading}
-              >
+              <Button type="submit" variant="default" disabled={loading}>
                 {loading ? "Enviando..." : "Enviar Solicitação"}
               </Button>
             </div>
           </form>
         </CardContent>
       </Card>
+
+      <Toast
+        open={toastOpen}
+        onClose={() => setToastOpen(false)}
+        message={toastMessage}
+        variant={toastVariant}
+      />
     </div>
   );
 }
-

@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import { LoginPayload, RefreshTokenPayload } from "./auth.payloads";
+import { LoginPayload } from "./auth.payloads";
 import { AuthResponse } from "@/types";
 
 const login = async (
@@ -9,20 +9,6 @@ const login = async (
   return response.data;
 };
 
-const refreshToken = async (
-  payload: RefreshTokenPayload
-): Promise<AuthResponse> => {
-  const response = await api.post("/auth/refresh", { refresh_token: payload.refresh_token });
-  return response.data;
-};
-
-const testAuth = async (): Promise<string> => {
-  const response = await api.get("/auth");
-  return response.data;
-};
-
 export const AuthAPI = {
   login,
-  refreshToken,
-  testAuth,
 };

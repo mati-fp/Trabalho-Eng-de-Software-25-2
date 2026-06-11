@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { getAuthToken } from "@/lib/api";
-import { decodeJWT, JWTPayload } from "@/lib/jwt";
-import { useRouter } from "next/navigation";
+import { decodeJWT } from "@/lib/jwt";
 
 export interface UserProfile {
   name: string;
@@ -14,31 +13,18 @@ export interface UserProfile {
 export function useAuth() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
   useEffect(() => {
     const token = getAuthToken();
-    if (!token) {
-      setProfile(null);
-      setLoading(false);
-      return;
-    }
+    const decoded = token ? decodeJWT(token) : null;
 
-    const tokenToDecode = token;
-    if (!tokenToDecode) {
-      router.push("/login");
-      setProfile(null);
-      setLoading(false);
-      return;
-    }
-
-    const decoded = decodeJWT(tokenToDecode);
-
-    if (decoded) {
+    // Sem um papel (role) valido o token nao representa uma sessao utilizavel;
+    // nao assumimos nenhum papel padrao (em especial, nunca 'admin').
+    if (decoded?.role) {
       setProfile({
         name: (decoded.name as string) || "Usuário",
         email: (decoded.email as string) || "",
-        role: (decoded.role as string) || "admin",
+        role: decoded.role as string,
         sub: decoded.sub as string,
         companyId: decoded.companyId as string,
       });

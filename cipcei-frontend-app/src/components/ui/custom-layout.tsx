@@ -13,11 +13,9 @@ import {
   Menu,
   X,
   User,
-  Shield,
-  ListChecks
+  Shield
 } from "lucide-react";
-import { getAuthToken, removeAuthToken } from "@/lib/api";
-import { decodeJWT } from "@/lib/jwt";
+import { clearAuthTokens } from "@/lib/api";
 import Link from "next/link";
 import { useAuth } from "@/hooks";
 
@@ -30,7 +28,6 @@ interface MenuItem {
 const menuItemsAdmin: MenuItem[] = [
   { label: "Tabela de IPs", icon: <Database className="w-5 h-5" />, href: "/admin/ips" },
   { label: "Histórico", icon: <FileText className="w-5 h-5" />, href: "/admin/history/all" },
-  // { label: "Home", icon: <LayoutDashboard className="w-5 h-5" />, href: "/admin/home" },
   { label: "Solicitações", icon: <Ticket className="w-5 h-5" />, href: "/admin/requests" },
   { label: "Empresas", icon: <Users className="w-5 h-5" />, href: "/admin/clients" },
 ];
@@ -72,7 +69,7 @@ export default function CustomLayout({
 
 
   const handleLogout = () => {
-    removeAuthToken();
+    clearAuthTokens();
     router.push("/login");
   };
 

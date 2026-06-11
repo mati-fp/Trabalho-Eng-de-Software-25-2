@@ -1,23 +1,24 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks";
 
 export default function Home() {
   const router = useRouter();
-  const { profile } = useAuth();
+  const { profile, loading } = useAuth();
 
   useEffect(() => {
-    if (profile?.role === "admin") {
+    if (loading) return;
+
+    if (!profile) {
+      router.push("/login");
+    } else if (profile.role === "admin") {
       router.push("/admin/ips");
     } else {
       router.push("/company/ips");
     }
-  }, [profile]);
+  }, [profile, loading, router]);
 
-  return (
-    <></>
-  );
+  return <></>;
 }

@@ -9,14 +9,24 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { profile } = useAuth();
+  const { profile, loading } = useAuth();
   const router = useRouter();
-  
+
   useEffect(() => {
-    if (profile?.role === "company") {
+    if (loading) return;
+
+    if (!profile) {
+      router.push("/login");
+    } else if (profile.role === "company") {
       router.push("/company/ips");
     }
-  }, [profile]);
+  }, [profile, loading, router]);
+
+  // Evita renderizar o conteudo admin (e disparar as chamadas de API das telas
+  // filhas) antes de confirmar a sessao; o efeito acima cuida do redirect.
+  if (loading || !profile || profile.role !== "admin") {
+    return null;
+  }
 
   return (
     <CustomLayout type="admin">

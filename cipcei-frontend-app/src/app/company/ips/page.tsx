@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FindAllIpsParams } from "@/infra/ips";
-import { IP, IpStatus } from "@/types";
+import { IP } from "@/types";
 import {
   Table,
   TableBody,
@@ -54,14 +53,8 @@ export default function IpsPage() {
         setLoading(true);
         setError(null);
 
-        const params: FindAllIpsParams = {};
-
-        if (statusFilter !== "all") {
-          params.status = statusFilter as IpStatus;
-        }
         const data = await CompaniesAPI.getMyIps({});
         setIps(data);
-        setFilteredIps(data);
       } catch (err) {
         setError("Erro ao carregar IPs. Tente novamente.");
         console.error("Error fetching IPs:", err);
@@ -71,11 +64,16 @@ export default function IpsPage() {
     };
 
     fetchIps();
-  }, [statusFilter]);
+  }, []);
 
-  // Apply local search and sorting
+  // Apply local filters (status + search) and sorting
   useEffect(() => {
     let result = [...ips];
+
+    // Apply status filter
+    if (statusFilter !== "all") {
+      result = result.filter((ip) => ip.status === statusFilter);
+    }
 
     // Apply search filter
     if (searchQuery) {
@@ -99,7 +97,7 @@ export default function IpsPage() {
 
     setFilteredIps(result);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [ips, searchQuery, sortField, sortOrder]);
+  }, [ips, statusFilter, searchQuery, sortField, sortOrder]);
 
   // Pagination
   const totalPages = Math.ceil(filteredIps.length / itemsPerPage);
@@ -127,13 +125,8 @@ export default function IpsPage() {
   const handleRefreshIps = async () => {
     try {
       setError(null);
-      const params: FindAllIpsParams = {};
-      if (statusFilter !== "all") {
-        params.status = statusFilter as IpStatus;
-      }
       const data = await CompaniesAPI.getMyIps({});
       setIps(data);
-      setFilteredIps(data);
     } catch (err) {
       setError("Erro ao atualizar IPs. Tente novamente.");
       console.error("Error refreshing IPs:", err);

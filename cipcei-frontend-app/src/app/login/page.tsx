@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { AuthAPI } from "@/infra/auth";
-import { setAuthToken } from "@/lib/api";
+import { setAuthToken, setRefreshToken } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,8 +17,8 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@cei.ufrgs.br");
-  const [password, setPassword] = useState("admin123456");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -36,7 +36,7 @@ export default function LoginPage() {
 
       // Store refresh token if provided
       if (response.refresh_token) {
-        localStorage.setItem("refresh_token", response.refresh_token);
+        setRefreshToken(response.refresh_token);
       }
 
       // Redirect to home page

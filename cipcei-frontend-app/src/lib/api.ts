@@ -1,5 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
-import { AuthAPI } from "@/infra/auth";
+
+const AUTH_TOKEN_KEY = "auth_token";
+const REFRESH_TOKEN_KEY = "refresh_token";
 
 // Create axios instance with base configuration
 export const api = axios.create({
@@ -33,7 +35,7 @@ api.interceptors.request.use(
   (config) => {
     // Get token from localStorage
     if (typeof window !== "undefined") {
-      const token = localStorage.getItem("auth_token");
+      const token = getAuthToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -75,12 +77,11 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       if (typeof window !== "undefined") {
-        const refreshToken = localStorage.getItem("refresh_token");
+        const refreshToken = getRefreshToken();
 
         if (!refreshToken) {
           // No refresh token, clear tokens and redirect to login
-          localStorage.removeItem("auth_token");
-          localStorage.removeItem("refresh_token");
+          clearAuthTokens();
           isRefreshing = false;
           processQueue(error, null);
           window.location.href = "/login";
@@ -91,9 +92,9 @@ api.interceptors.response.use(
           // Try to refresh the token
           const response = await refreshApi.post("/auth/refresh", { refresh_token: refreshToken });
           // Update tokens
-          localStorage.setItem("auth_token", response.data.access_token);
+          setAuthToken(response.data.access_token);
           if (response.data.refresh_token) {
-            localStorage.setItem("refresh_token", response.data.refresh_token);
+            setRefreshToken(response.data.refresh_token);
           }
 
           // Update the original request with new token
@@ -108,8 +109,7 @@ api.interceptors.response.use(
           return api(originalRequest);
         } catch (refreshError) {
           // Refresh failed - clear tokens and redirect to login for ANY error
-          localStorage.removeItem("auth_token");
-          localStorage.removeItem("refresh_token");
+          clearAuthTokens();
           isRefreshing = false;
           processQueue(refreshError as AxiosError, null);
 
@@ -130,20 +130,35 @@ api.interceptors.response.use(
 // Helper functions for token management
 export const setAuthToken = (token: string): void => {
   if (typeof window !== "undefined") {
-    localStorage.setItem("auth_token", token);
-  }
-};
-
-export const removeAuthToken = (): void => {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("auth_token");
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
   }
 };
 
 export const getAuthToken = (): string | null => {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("auth_token");
+    return localStorage.getItem(AUTH_TOKEN_KEY);
   }
   return null;
+};
+
+export const setRefreshToken = (token: string): void => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(REFRESH_TOKEN_KEY, token);
+  }
+};
+
+export const getRefreshToken = (): string | null => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem(REFRESH_TOKEN_KEY);
+  }
+  return null;
+};
+
+// Remove o access e o refresh token juntos (evita deixar o refresh token orfao).
+export const clearAuthTokens = (): void => {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+  }
 };
 

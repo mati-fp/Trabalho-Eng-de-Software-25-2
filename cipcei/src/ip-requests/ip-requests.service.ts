@@ -12,7 +12,6 @@ import { Company } from '../companies/entities/company.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { IpHistoryService } from '../ip-history/ip-history.service';
 import { IpAction } from '../ip-history/entities/ip-history.entity';
-import { EmailService } from '../email/email.service';
 import { CreateIpRequestDto } from './dto/create-ip-request.dto';
 import { ApproveIpRequestDto } from './dto/approve-ip-request.dto';
 import { RejectIpRequestDto } from './dto/reject-ip-request.dto';
@@ -29,7 +28,6 @@ export class IpRequestsService {
     @InjectRepository(Company)
     private companyRepository: Repository<Company>,
     private ipHistoryService: IpHistoryService,
-    private emailService: EmailService,
     private dataSource: DataSource,
   ) {}
 
@@ -47,25 +45,21 @@ export class IpRequestsService {
 
     const company = await this.companyRepository.findOne({
       where: { id: user.company.id },
-      relations: ['room', 'user'],
+      relations: ['room'],
     });
 
     if (!company || !company.room) {
       throw new BadRequestException('Empresa não possui sala associada');
     }
 
-    // Se for cancelamento, precisa do IP
-    if (
-      createIpRequestDto.requestType === IpRequestType.CANCELLATION &&
-      !createIpRequestDto.ipId
-    ) {
-      throw new BadRequestException(
-        'ID do IP é obrigatório para cancelamento',
-      );
-    }
-
+    // O IP só é relevante para solicitações de cancelamento; em uma
+    // solicitação nova o IP é escolhido apenas na aprovação do admin.
     let ip: Ip | null = null;
-    if (createIpRequestDto.ipId) {
+    if (createIpRequestDto.requestType === IpRequestType.CANCELLATION) {
+      if (!createIpRequestDto.ipId) {
+        throw new BadRequestException('ID do IP é obrigatório para cancelamento');
+      }
+
       ip = await this.ipRepository.findOne({
         where: { id: createIpRequestDto.ipId },
         relations: ['company'],
@@ -110,17 +104,6 @@ export class IpRequestsService {
       relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
     });
 
-    // Enviar email de confirmacao de solicitacao
-    await this.emailService.sendIpRequestConfirmation({
-      companyName: company.user.name,
-      companyEmail: company.user.email,
-      requestType: createIpRequestDto.requestType,
-      justification: createIpRequestDto.justification,
-      macAddress: createIpRequestDto.macAddress,
-      userName: createIpRequestDto.userName,
-      requestDate: savedRequest.requestDate,
-    });
-
     return toIpRequestResponseDto(requestWithRelations!);
   }
 
@@ -154,7 +137,7 @@ export class IpRequestsService {
       // (necessario porque o eager loading da company nao carrega relacoes aninhadas)
       const companyWithRoom = await this.companyRepository.findOne({
         where: { id: request.company.id },
-        relations: ['room', 'user'],
+        relations: ['room'],
       });
 
       if (!companyWithRoom || !companyWithRoom.room) {
@@ -176,6 +159,13 @@ export class IpRequestsService {
               where: { id: approveDto.ipId },
               relations: ['room'],
             });
+
+            // O IP informado precisa pertencer à sala da empresa solicitante
+            if (ipFound && ipFound.room?.id !== request.company.room.id) {
+              throw new BadRequestException(
+                'O IP informado não pertence à sala da empresa',
+              );
+            }
           } else {
             // Buscar automaticamente um IP disponível na sala da empresa
             ipFound = await this.ipRepository.findOne({
@@ -227,10 +217,10 @@ export class IpRequestsService {
 
           // Cancelar/Liberar o IP
           ip.status = IpStatus.AVAILABLE;
-          ip.company = undefined as any;
-          ip.macAddress = undefined as any;
-          ip.userName = undefined as any;
-          ip.assignedAt = undefined as any;
+          ip.company = null as any;
+          ip.macAddress = null as any;
+          ip.userName = null as any;
+          ip.assignedAt = null as any;
           await queryRunner.manager.save(ip);
 
           // Registrar no histórico
@@ -269,17 +259,6 @@ export class IpRequestsService {
       const requestWithRelations = await this.ipRequestRepository.findOne({
         where: { id: savedRequest.id },
         relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
-      });
-
-      // Enviar email de aprovacao
-      await this.emailService.sendIpApproved({
-        companyName: companyWithRoom.user.name,
-        companyEmail: companyWithRoom.user.email,
-        ipAddress: ip.address,
-        macAddress: request.macAddress,
-        userName: request.userName,
-        requestType: request.requestType,
-        approvedAt: savedRequest.responseDate,
       });
 
       return toIpRequestResponseDto(requestWithRelations!);
@@ -335,23 +314,6 @@ export class IpRequestsService {
       where: { id: savedRequest.id },
       relations: ['company', 'company.user', 'company.room', 'ip', 'requestedBy'],
     });
-
-    // Buscar company com user para enviar email
-    const companyWithUser = await this.companyRepository.findOne({
-      where: { id: request.company.id },
-      relations: ['user'],
-    });
-
-    // Enviar email de rejeicao
-    if (companyWithUser?.user) {
-      await this.emailService.sendIpRejected({
-        companyName: companyWithUser.user.name,
-        companyEmail: companyWithUser.user.email,
-        requestType: request.requestType,
-        rejectionReason: rejectDto.rejectionReason,
-        rejectedAt: savedRequest.responseDate,
-      });
-    }
 
     return toIpRequestResponseDto(requestWithRelations!);
   }

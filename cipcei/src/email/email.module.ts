@@ -4,8 +4,11 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/adapters/handlebars.ad
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { join } from 'path';
 import { EmailService } from './email.service';
-import { EmailController } from './email.controller';
 
+// Modulo de e-mail desativado: nao esta importado em nenhum modulo da aplicacao.
+// O codigo (servico, templates e configuracao do MailerModule) e mantido para
+// retomada futura. Para reativar, importe EmailModule em AppModule e nos modulos
+// que precisarem disparar e-mail (ex.: IpRequestsModule) e reinjete o EmailService.
 @Module({
   imports: [
     MailerModule.forRootAsync({
@@ -34,7 +37,6 @@ import { EmailController } from './email.controller';
       inject: [ConfigService],
     }),
   ],
-  controllers: [EmailController],
   providers: [EmailService],
   exports: [EmailService],
 })

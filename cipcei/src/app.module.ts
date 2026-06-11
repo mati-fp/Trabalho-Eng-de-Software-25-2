@@ -7,7 +7,6 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { IpRequestsModule } from './ip-requests/ip-requests.module';
 import { IpHistoryModule } from './ip-history/ip-history.module';
-import { EmailModule } from './email/email.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
@@ -37,7 +36,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
         password: configService.get<string>('DATABASE_PASSWORD'),
         database: configService.get<string>('DATABASE_NAME'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: configService.get<boolean>('TYPEORM_SYNCHRONIZE'),
+        synchronize: configService.get<string>('TYPEORM_SYNCHRONIZE') === 'true',
       }),
       inject: [ConfigService],
     }),
@@ -48,7 +47,6 @@ import { ThrottlerModule } from '@nestjs/throttler';
     IpsModule,
     IpRequestsModule,
     IpHistoryModule,
-    EmailModule,
   ],
   providers: [
     // JwtAuthGuard executa PRIMEIRO

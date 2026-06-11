@@ -2,12 +2,12 @@
 
 ## Sistema de gerenciamento de IPs para o CEI (Centro de Empreendedorismo e Inovação do INF-UFRGS)
 
-Aplicação web para controlar a alocação de endereços IP das empresas incubadas no CEI: cadastro de IPs por sala, fluxo de solicitação e aprovação, histórico de auditoria e notificações por e-mail.
+Aplicação web para controlar a alocação de endereços IP das empresas incubadas no CEI: cadastro de IPs por sala, fluxo de solicitação e aprovação e histórico de auditoria.
 
 ## Stack
 
 - Backend: NestJS 11 + TypeORM + PostgreSQL
-- Frontend: Next.js 15 + React 19
+- Frontend: Next.js 16 + React 19
 - Gerenciador de pacotes: pnpm 11 (fixado pelo campo `packageManager` e instalado via corepack)
 - Runtime: Node 22 LTS
 - Containers: Docker + Docker Compose

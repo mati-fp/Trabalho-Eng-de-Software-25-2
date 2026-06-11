@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, DataSource, EntityManager } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { CompaniesService } from './companies.service';
 import { Company } from './entities/company.entity';
@@ -8,7 +9,6 @@ import { Room } from '../rooms/entities/room.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Ip, IpStatus } from '../ips/entities/ip.entity';
 import { CreateCompanyDto } from './dto/create-company.dto';
-import { UpdateCompanyDto } from './dto/update-company.dto';
 import { IpHistoryService } from '../ip-history/ip-history.service';
 
 describe('CompaniesService', () => {
@@ -280,30 +280,90 @@ describe('CompaniesService', () => {
   });
 
   describe('update', () => {
-    const updateDto: UpdateCompanyDto = {};
-
-    it('should successfully update a company and return DTO', async () => {
-      const updatedCompany = { ...mockCompany };
-      companyRepository.preload.mockResolvedValue(updatedCompany);
-      companyRepository.save.mockResolvedValue(updatedCompany);
-      companyRepository.findOne.mockResolvedValue(updatedCompany);
-
-      const result = await service.update(mockCompany.id, updateDto);
-
-      // Agora retorna DTO
-      expect(result.id).toBe(mockCompany.id);
-      expect(result.roomNumber).toBe(101);
-      expect(companyRepository.preload).toHaveBeenCalledWith({
-        id: mockCompany.id,
-        ...updateDto,
-      });
+    beforeEach(() => {
+      const mockManager = { save: jest.fn() } as unknown as EntityManager;
+      (dataSource.transaction as jest.Mock).mockImplementation(
+        async (cb: (m: EntityManager) => Promise<unknown>) => cb(mockManager),
+      );
     });
 
-    it('should throw NotFoundException when company does not exist', async () => {
-      companyRepository.preload.mockResolvedValue(undefined);
+    it('should change the company room when a new roomId is provided', async () => {
+      const newRoom = { ...mockRoom, id: 'room-new', number: 202 } as Room;
+      const localCompany = { ...mockCompany } as Company;
+      companyRepository.findOne
+        .mockResolvedValueOnce(localCompany)
+        .mockResolvedValueOnce({ ...mockCompany, room: newRoom } as Company);
+      roomRepository.findOneBy.mockResolvedValue(newRoom);
 
-      await expect(service.update('non-existent-id', updateDto)).rejects.toThrow(
-        new NotFoundException('Empresa com ID "non-existent-id" nao encontrada'),
+      const result = await service.update(mockCompany.id, { roomId: 'room-new' });
+
+      expect(roomRepository.findOneBy).toHaveBeenCalledWith({ id: 'room-new' });
+      expect(localCompany.room).toBe(newRoom);
+      expect(result.roomNumber).toBe(202);
+    });
+
+    it('should update name, email and a hashed password of the representative user', async () => {
+      const localUser = { ...mockUser } as User;
+      const localCompany = { ...mockCompany, user: localUser } as Company;
+      companyRepository.findOne
+        .mockResolvedValueOnce(localCompany)
+        .mockResolvedValueOnce(localCompany);
+      userRepository.findOneBy.mockResolvedValue(null);
+
+      await service.update(mockCompany.id, {
+        user: { name: 'Novo Nome', email: 'novo@test.com', password: 'senhaSegura123' },
+      });
+
+      expect(localUser.name).toBe('Novo Nome');
+      expect(localUser.email).toBe('novo@test.com');
+      // A senha foi realmente hasheada e corresponde ao texto plano informado
+      expect(localUser.password).not.toBe('senhaSegura123');
+      expect(await bcrypt.compare('senhaSegura123', localUser.password)).toBe(true);
+    });
+
+    it('should ignore the role field and keep the user as company', async () => {
+      const localUser = { ...mockUser, role: UserRole.COMPANY } as User;
+      const localCompany = { ...mockCompany, user: localUser } as Company;
+      companyRepository.findOne
+        .mockResolvedValueOnce(localCompany)
+        .mockResolvedValueOnce(localCompany);
+
+      await service.update(mockCompany.id, {
+        user: { name: 'Novo Nome', role: UserRole.ADMIN },
+      });
+
+      expect(localUser.role).toBe(UserRole.COMPANY);
+      expect(localUser.name).toBe('Novo Nome');
+      // Sem email novo, a verificação de unicidade não é chamada
+      expect(userRepository.findOneBy).not.toHaveBeenCalled();
+    });
+
+    it('should throw ConflictException when the new email belongs to another user', async () => {
+      companyRepository.findOne.mockResolvedValueOnce({ ...mockCompany } as Company);
+      userRepository.findOneBy.mockResolvedValue({
+        id: 'other-user',
+        email: 'taken@test.com',
+      } as User);
+
+      await expect(
+        service.update(mockCompany.id, { user: { email: 'taken@test.com' } }),
+      ).rejects.toThrow(new ConflictException('O email "taken@test.com" já está em uso.'));
+    });
+
+    it('should throw NotFoundException when the room does not exist', async () => {
+      companyRepository.findOne.mockResolvedValueOnce({ ...mockCompany } as Company);
+      roomRepository.findOneBy.mockResolvedValue(null);
+
+      await expect(
+        service.update(mockCompany.id, { roomId: 'inexistente' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException when the company does not exist', async () => {
+      companyRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.update('non-existent-id', {})).rejects.toThrow(
+        new NotFoundException('Empresa com ID "non-existent-id" não encontrada'),
       );
     });
   });

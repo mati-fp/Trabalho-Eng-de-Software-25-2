@@ -3,7 +3,8 @@ import { CreateCompanyDto } from './dto/create-company.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Company } from './entities/company.entity';
 import { DataSource, In, Repository } from 'typeorm';
-import { UpdateCompanyDto } from './dto/update-company.dto';
+import * as bcrypt from 'bcrypt';
+import { UpdateCompanyDto, UpdateCompanyUserDto } from './dto/update-company.dto';
 import { Room } from 'src/rooms/entities/room.entity';
 import { User, UserRole } from 'src/users/entities/user.entity';
 import { Ip, IpStatus } from 'src/ips/entities/ip.entity';
@@ -26,7 +27,7 @@ export class CompaniesService {
     @InjectRepository(Ip)
     private readonly ipRepository: Repository<Ip>,
     private readonly ipHistoryService: IpHistoryService,
-    private dataSource: DataSource,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findAll(): Promise<CompanyResponseDto[]> {
@@ -94,21 +95,71 @@ export class CompaniesService {
   }
 
   async update(id: string, updateCompanyDto: UpdateCompanyDto): Promise<CompanyResponseDto> {
-    // O método `preload` busca uma entidade pelo id e a atualiza com os novos dados.
-    const company = await this.companyRepository.preload({
-      id: id,
-      ...updateCompanyDto,
+    const company = await this.companyRepository.findOne({
+      where: { id },
+      relations: ['user', 'room'],
     });
     if (!company) {
-      throw new NotFoundException(`Empresa com ID "${id}" nao encontrada`);
+      throw new NotFoundException(`Empresa com ID "${id}" não encontrada`);
     }
-    const savedCompany = await this.companyRepository.save(company);
+
+    // Troca a sala da empresa, se um novo roomId foi informado
+    if (updateCompanyDto.roomId) {
+      const room = await this.roomRepository.findOneBy({ id: updateCompanyDto.roomId });
+      if (!room) {
+        throw new NotFoundException(
+          `Sala com ID "${updateCompanyDto.roomId}" não encontrada`,
+        );
+      }
+      company.room = room;
+    }
+
+    // Atualiza os dados do usuário representante, se informados
+    if (updateCompanyDto.user) {
+      await this.applyUserChanges(company.user, updateCompanyDto.user);
+    }
+
+    // Persiste usuário e empresa de forma atômica
+    await this.dataSource.transaction(async (manager) => {
+      if (updateCompanyDto.user) {
+        await manager.save(company.user);
+      }
+      await manager.save(company);
+    });
+
     // Buscar com relacoes para retornar o DTO
     const fullCompany = await this.companyRepository.findOne({
-      where: { id: savedCompany.id },
+      where: { id: company.id },
       relations: ['room', 'user'],
     });
     return toCompanyResponseDto(fullCompany!);
+  }
+
+  /**
+   * Aplica as alterações parciais nos dados do usuário representante da empresa.
+   * Garante a unicidade do email e gera o hash de uma nova senha (o hook
+   * @BeforeInsert da entidade só roda na criação, não em updates).
+   * O campo role é intencionalmente ignorado: a empresa sempre mantém o papel company.
+   */
+  private async applyUserChanges(
+    user: User,
+    data: UpdateCompanyUserDto,
+  ): Promise<void> {
+    if (data.email && data.email !== user.email) {
+      const existing = await this.userRepository.findOneBy({ email: data.email });
+      if (existing && existing.id !== user.id) {
+        throw new ConflictException(`O email "${data.email}" já está em uso.`);
+      }
+      user.email = data.email;
+    }
+
+    if (data.name) {
+      user.name = data.name;
+    }
+
+    if (data.password) {
+      user.password = await bcrypt.hash(data.password, 10);
+    }
   }
 
   async remove(id: string, admin: User): Promise<void> {

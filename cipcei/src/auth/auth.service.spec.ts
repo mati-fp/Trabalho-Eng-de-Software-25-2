@@ -192,22 +192,15 @@ describe('AuthService', () => {
       expect(jwtService.sign).not.toHaveBeenCalled();
     });
 
-    it('should use default config values when env variables are not set', async () => {
+    it('should throw when JWT_REFRESH_SECRET is not configured', async () => {
       // Setup
       usersService.findOneByEmail.mockResolvedValue(mockUser as any);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      jwtService.sign.mockReturnValueOnce('token1');
-      jwtService.sign.mockReturnValueOnce('token2');
-      configService.get.mockReturnValue(undefined); // No env variables set
+      configService.get.mockReturnValue(undefined); // Nenhuma variavel de ambiente setada
 
-      // Execute
-      await service.login(loginDto);
-
-      // Assert - should still work with fallback values
-      expect(jwtService.sign).toHaveBeenCalledWith(
-        expect.objectContaining({ email: mockUser.email }),
-        expect.objectContaining({ expiresIn: '15m' }),
-      );
+      // Execute & Assert - sem secret configurado o login deve falhar (sem fallback inseguro)
+      await expect(service.login(loginDto)).rejects.toThrow('JWT_REFRESH_SECRET');
+      expect(jwtService.sign).not.toHaveBeenCalled();
     });
   });
 
@@ -256,6 +249,10 @@ describe('AuthService', () => {
 
     it('should throw UnauthorizedException when refresh token is invalid', async () => {
       // Setup
+      configService.get.mockImplementation((key: string) => {
+        if (key === 'JWT_REFRESH_SECRET') return 'refresh-secret';
+        return null;
+      });
       jwtService.verify.mockImplementation(() => {
         throw new Error('Invalid token');
       });
@@ -311,30 +308,15 @@ describe('AuthService', () => {
       );
     });
 
-    it('should use fallback config values when not set', async () => {
+    it('should throw when JWT_REFRESH_SECRET is not configured', async () => {
       // Setup
-      const mockPayload = {
-        sub: mockUser.id,
-        email: mockUser.email,
-        role: mockUser.role,
-      };
-
-      jwtService.verify.mockReturnValue(mockPayload);
-      usersService.findOne.mockResolvedValue(mockUser as any);
-      jwtService.sign.mockReturnValue('new-token');
       configService.get.mockReturnValue(undefined);
 
-      // Execute
-      await service.refreshToken(validRefreshToken);
-
-      // Assert - should use fallback values
-      expect(jwtService.verify).toHaveBeenCalledWith(validRefreshToken, {
-        secret: 'fallback-refresh-secret',
-      });
-      expect(jwtService.sign).toHaveBeenCalledWith(
-        expect.any(Object),
-        { expiresIn: '15m' },
+      // Execute & Assert - falha rapido sem nem chegar a verificar o token
+      await expect(service.refreshToken(validRefreshToken)).rejects.toThrow(
+        'JWT_REFRESH_SECRET',
       );
+      expect(jwtService.verify).not.toHaveBeenCalled();
     });
   });
 });

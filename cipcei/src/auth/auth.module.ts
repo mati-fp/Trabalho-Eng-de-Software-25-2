@@ -14,7 +14,10 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        const secret = configService.get<string>('JWT_SECRET') || 'fallback-secret';
+        const secret = configService.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new Error('JWT_SECRET não está configurado');
+        }
         const expiresIn = configService.get<string>('JWT_EXPIRES_IN') || '15m';
 
         return {

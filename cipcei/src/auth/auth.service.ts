@@ -41,7 +41,7 @@ export class AuthService {
     };
 
     const jwtExpiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '15m';
-    const jwtRefreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET') || 'fallback-refresh-secret';
+    const jwtRefreshSecret = this.getJwtRefreshSecret();
     const jwtRefreshExpiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
 
     const access_token = this.jwtService.sign(payload, {
@@ -90,10 +90,10 @@ export class AuthService {
    * Renovar access token usando refresh token
    */
   async refreshToken(refreshToken: string): Promise<{ access_token: string }> {
-    try {
-      const jwtRefreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET') || 'fallback-refresh-secret';
-      const jwtExpiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '15m';
+    const jwtRefreshSecret = this.getJwtRefreshSecret();
+    const jwtExpiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '15m';
 
+    try {
       const payload = this.jwtService.verify(refreshToken, {
         secret: jwtRefreshSecret,
       });
@@ -119,5 +119,17 @@ export class AuthService {
     } catch (error) {
       throw new UnauthorizedException('Refresh token inválido ou expirado');
     }
+  }
+
+  /**
+   * Le o secret do refresh token, falhando rapido se nao estiver configurado
+   * (evita usar um valor padrao hardcoded e inseguro).
+   */
+  private getJwtRefreshSecret(): string {
+    const secret = this.configService.get<string>('JWT_REFRESH_SECRET');
+    if (!secret) {
+      throw new Error('JWT_REFRESH_SECRET não está configurado');
+    }
+    return secret;
   }
 }
